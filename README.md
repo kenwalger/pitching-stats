@@ -56,3 +56,7 @@ python main.py --start_date YYYY-MM-DD --end_date YYYY-MM-DD --n 10
 -   `--start_date`: The start date for the data query.
 -   `--end_date`: The end date for the data query.
 -   `--n`: The number of top and bottom pitchers to display.
+
+
+---
+[LICENSE](LICENSE)
