@@ -97,6 +97,7 @@ def summarize_pitcher(df_pitcher):
     df_pitcher['avg_speed_rolling'] = df_pitcher['release_speed'].rolling(50, min_periods=1).mean()
     df_pitcher['avg_spin_rolling'] = df_pitcher['release_spin_rate'].rolling(50, min_periods=1).mean()
 
+    total_pitches_for_pitcher = len(df_pitcher)
     summary = (
         df_pitcher.groupby('pitch_type')
         .agg(
@@ -114,6 +115,20 @@ def summarize_pitcher(df_pitcher):
         )
         .reset_index()
     )
+    if total_pitches_for_pitcher > 0:
+        summary['pitch_percentage'] = (summary['total_pitches'] / total_pitches_for_pitcher) * 100
+    else:
+        summary['pitch_percentage'] = 0
+        
+    # Reorder columns to place pitch_percentage after total_pitches
+    cols = summary.columns.tolist()
+    # Find the index of total_pitches
+    total_pitches_index = cols.index('total_pitches')
+    # Remove pitch_percentage and insert it after total_pitches
+    cols.remove('pitch_percentage')
+    cols.insert(total_pitches_index + 1, 'pitch_percentage')
+    summary = summary[cols]
+
     return summary
 
 def process_data(start_dt, end_dt, n=5):

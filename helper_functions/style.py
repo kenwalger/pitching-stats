@@ -41,6 +41,10 @@ def style_summary_df(df):
 
     styler = df.style.apply(apply_cell_styles, axis=1)
     
+    # Format pitch_percentage column
+    if 'pitch_percentage' in df.columns:
+        styler = styler.format({'pitch_percentage': '{:.2f}%'})
+        
     # Set border properties on all cells and headers
     styler.set_table_styles([
         {'selector': 'th, td', 'props': [('border', '1px solid #dee2e6')]}
