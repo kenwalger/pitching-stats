@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Pitch Types - Pitching Analysis{% endblock %}
+
+{% block content %}
+    <h1 class="mt-4">Pitch Types</h1>
+    <p class="lead">A reference for pitch type abbreviations and their full names.</p>
+    
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Abbreviation</th>
+                    <th>Full Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>FF</td><td>4-Seam Fastball</td></tr>
+                <tr><td>SI</td><td>Sinker</td></tr>
+                <tr><td>SL</td><td>Slider</td></tr>
+                <tr><td>CH</td><td>Changeup</td></tr>
+                <tr><td>CU</td><td>Curveball</td></tr>
+                <tr><td>FC</td><td>Cutter</td></tr>
+                <tr><td>FS</td><td>Split-Finger Fastball</td></tr>
+                <tr><td>ST</td><td>Two-Seam Fastball / Sweeper</td></tr>
+                <tr><td>SV</td><td>Sweeper</td></tr>
+                <tr><td>KN</td><td>Knuckleball</td></tr>
+                <tr><td>EP</td><td>Eephus</td></tr>
+                <tr><td>GY</td><td>Gyroball</td></tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

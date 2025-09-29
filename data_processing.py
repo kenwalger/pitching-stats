@@ -19,19 +19,36 @@ def process_pitcher_data(df):
     return df
 
 def compute_general_stats(df_pitcher):
-    # Approximate outs from events (simplified)
-    outs = df_pitcher['events'].isin(['strikeout', 'groundout', 'flyout']).sum()
-    hits = df_pitcher['events'].isin(['single', 'double', 'triple', 'home_run']).sum()
-    walks = df_pitcher['events'].isin(['walk']).sum()
-    hr = (df_pitcher['events'] == 'home_run').sum()
-    strikeouts = (df_pitcher['events'] == 'strikeout').sum()
-    innings_pitched = outs / 3 if outs > 0 else 0.1  # avoid div by 0
+    # Drop rows where 'events' is NaN, as they don't represent the end of a plate appearance
+    events = df_pitcher['events'].dropna()
 
-    era = (hr * 1) / innings_pitched * 9  # placeholder, you could use earned runs if available
-    whip = (walks + hits) / innings_pitched
-    k_per_9 = strikeouts / innings_pitched * 9
-    bb_per_9 = walks / innings_pitched * 9
-    hr_per_9 = hr / innings_pitched * 9
+    # Define out-producing events
+    single_out_events = [
+        'strikeout', 'groundout', 'flyout', 'field_out', 'force_out',
+        'sac_fly', 'sac_bunt', 'fielders_choice_out', 'bunt_groundout',
+        'bunt_pop_out', 'double_play_bunt', 'triple_play_bunt'
+    ]
+    
+    # Calculate outs, handling double and triple plays
+    outs = events.isin(single_out_events).sum()
+    outs += events.str.contains('double_play', na=False).sum()
+    outs += events.str.contains('triple_play', na=False).sum() * 2
+
+    # Standard calculations
+    hits = events.isin(['single', 'double', 'triple', 'home_run']).sum()
+    walks = events.isin(['walk']).sum()
+    hr = events.isin(['home_run']).sum()
+    strikeouts = events.isin(['strikeout']).sum()
+    
+    # Avoid division by zero for innings_pitched
+    innings_pitched = outs / 3 if outs > 0 else 0.1
+
+    # Per-9 inning stats
+    era = (hr * 1) / innings_pitched * 9 if innings_pitched > 0 else 0
+    whip = (walks + hits) / innings_pitched if innings_pitched > 0 else 0
+    k_per_9 = strikeouts / innings_pitched * 9 if innings_pitched > 0 else 0
+    bb_per_9 = walks / innings_pitched * 9 if innings_pitched > 0 else 0
+    hr_per_9 = hr / innings_pitched * 9 if innings_pitched > 0 else 0
 
     avg_speed = df_pitcher['release_speed'].mean()
     avg_spin = df_pitcher['release_spin_rate'].mean()
