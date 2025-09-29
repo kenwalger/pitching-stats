@@ -53,7 +53,7 @@
             {% for pitcher in top_pitchers_data %}
                 <div class="card mt-3">
                     <div class="card-header">
-                        <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
+                        <strong>{{ pitcher.stats.player_name }}</strong> ({{ pitcher.stats.pitcher_team }}) vs {{ pitcher.stats.opponent_team }}
                     </div>
                     <div class="card-body">
                         <p class="mb-1">
@@ -86,7 +86,7 @@
             {% for pitcher in bottom_pitchers_data %}
                 <div class="card mt-3">
                     <div class="card-header">
-                        <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
+                        <strong>{{ pitcher.stats.player_name }}</strong> ({{ pitcher.stats.pitcher_team }}) vs {{ pitcher.stats.opponent_team }}
                     </div>
                     <div class="card-body">
                         <p class="mb-1">

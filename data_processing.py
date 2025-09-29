@@ -67,12 +67,23 @@ def compute_general_stats(df_pitcher):
     avg_plate_z = df_pitcher['plate_z'].mean()
     
     player_name = df_pitcher['player_name'].iloc[0]
-    home_team = df_pitcher['home_team'].iloc[0]
     total_pitches = len(df_pitcher)
+
+    # Determine opponent from the most recent game
+    df_pitcher_sorted = df_pitcher.sort_values(by='game_date', ascending=False)
+    last_pitch = df_pitcher_sorted.iloc[0]
     
+    if last_pitch['inning_topbot'] == 'Top':
+        pitcher_team = last_pitch['home_team']
+        opponent_team = last_pitch['away_team']
+    else:
+        pitcher_team = last_pitch['away_team']
+        opponent_team = last_pitch['home_team']
+        
     return {
         'player_name': player_name,
-        'home_team': home_team,
+        'pitcher_team': pitcher_team,
+        'opponent_team': opponent_team,
         'total_pitches': total_pitches,
         'innings_pitched': innings_pitched_str,
         'strikeouts': strikeouts,
@@ -172,7 +183,7 @@ def display_data(pitcher_ids, category, all_pitchers_summary, general_stats):
         summary = all_pitchers_summary[pitcher_id]
         
         header = (
-            f"\n{category} STARTER: {stats['player_name']} vs {stats['home_team']} — {stats['innings_pitched']} IP, {stats['total_pitches']} Pitches\n"
+            f"\n{category} STARTER: {stats['player_name']} ({stats['pitcher_team']}) vs {stats['opponent_team']} — {stats['innings_pitched']} IP, {stats['total_pitches']} Pitches\n"
             f"  Rates: ERA: {stats['ERA']:.2f} | WHIP: {stats['WHIP']:.2f} | K/9: {stats['K/9']:.2f} | BB/9: {stats['BB/9']:.2f}\n"
             f"  Totals: {stats['strikeouts']} K | {stats['walks']} BB | {stats['hits']} H | {stats['hr']} HR"
         )
