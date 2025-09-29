@@ -21,6 +21,26 @@
     </form>
 
     {% if top_pitchers_data %}
+        <div class="mt-4 p-3 border rounded bg-light">
+            <h5 class="mb-2">Legend</h5>
+            <p class="mb-1">
+                <span style="display: inline-block; width: 12px; height: 12px; background-color: #d4edda; border: 1px solid #c3e6cb;"></span>
+                <strong class="ms-1">Green:</strong> Significantly <strong>above</strong> MLB average for that pitch type.
+            </p>
+            <p class="mb-2">
+                <span style="display: inline-block; width: 12px; height: 12px; background-color: #f8d7da; border: 1px solid #f5c6cb;"></span>
+                <strong class="ms-1">Red:</strong> Significantly <strong>below</strong> MLB average for that pitch type.
+            </p>
+            <hr>
+            <small class="text-muted">
+                "Significantly" is defined as:
+                <ul>
+                    <li><strong>Average Speed:</strong> More than 2 MPH different from the MLB average.</li>
+                    <li><strong>Average Spin:</strong> More than 150 RPM different from the MLB average.</li>
+                </ul>
+            </small>
+        </div>
+
         <h2 class="mt-5">Top {{ num_pitchers }} Starters</h2>
         {% for pitcher in top_pitchers_data %}
             <div class="card mt-3">
@@ -28,13 +48,22 @@
                     <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
                 </div>
                 <div class="card-body">
-                    <p>
-                        Total Pitches: {{ pitcher.stats.total_pitches }} | 
-                        ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} | 
-                        WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} | 
-                        K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} | 
-                        BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} | 
+                    <p class="mb-1">
+                        <strong>Rates:</strong>
+                        ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
+                        WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
+                        K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
+                        BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
                         HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
+                    </p>
+                    <p class="mb-2">
+                        <strong>Totals:</strong>
+                        {{ pitcher.stats.innings_pitched }} IP |
+                        {{ pitcher.stats.total_pitches }} Pitches |
+                        {{ pitcher.stats.strikeouts }} K |
+                        {{ pitcher.stats.walks }} BB |
+                        {{ pitcher.stats.hits }} H |
+                        {{ pitcher.stats.hr }} HR
                     </p>
                     <div class="table-responsive">
                         {{ pitcher.summary|safe }}
@@ -52,13 +81,22 @@
                     <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
                 </div>
                 <div class="card-body">
-                    <p>
-                        Total Pitches: {{ pitcher.stats.total_pitches }} | 
-                        ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} | 
-                        WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} | 
-                        K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} | 
-                        BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} | 
+                    <p class="mb-1">
+                        <strong>Rates:</strong>
+                        ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
+                        WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
+                        K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
+                        BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
                         HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
+                    </p>
+                    <p class="mb-2">
+                        <strong>Totals:</strong>
+                        {{ pitcher.stats.innings_pitched }} IP |
+                        {{ pitcher.stats.total_pitches }} Pitches |
+                        {{ pitcher.stats.strikeouts }} K |
+                        {{ pitcher.stats.walks }} BB |
+                        {{ pitcher.stats.hits }} H |
+                        {{ pitcher.stats.hr }} HR
                     </p>
                     <div class="table-responsive">
                         {{ pitcher.summary|safe }}

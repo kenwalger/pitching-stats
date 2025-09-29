@@ -41,14 +41,16 @@ def compute_general_stats(df_pitcher):
     strikeouts = events.isin(['strikeout']).sum()
     
     # Avoid division by zero for innings_pitched
-    innings_pitched = outs / 3 if outs > 0 else 0.1
+    innings_pitched_val = outs / 3 if outs > 0 else 0
+    innings_pitched_str = f"{int(innings_pitched_val)}.{outs % 3}"
+
 
     # Per-9 inning stats
-    era = (hr * 1) / innings_pitched * 9 if innings_pitched > 0 else 0
-    whip = (walks + hits) / innings_pitched if innings_pitched > 0 else 0
-    k_per_9 = strikeouts / innings_pitched * 9 if innings_pitched > 0 else 0
-    bb_per_9 = walks / innings_pitched * 9 if innings_pitched > 0 else 0
-    hr_per_9 = hr / innings_pitched * 9 if innings_pitched > 0 else 0
+    era = (hr * 1) / innings_pitched_val * 9 if innings_pitched_val > 0 else 0
+    whip = (walks + hits) / innings_pitched_val if innings_pitched_val > 0 else 0
+    k_per_9 = strikeouts / innings_pitched_val * 9 if innings_pitched_val > 0 else 0
+    bb_per_9 = walks / innings_pitched_val * 9 if innings_pitched_val > 0 else 0
+    hr_per_9 = hr / innings_pitched_val * 9 if innings_pitched_val > 0 else 0
 
     avg_speed = df_pitcher['release_speed'].mean()
     avg_spin = df_pitcher['release_spin_rate'].mean()
@@ -64,6 +66,11 @@ def compute_general_stats(df_pitcher):
         'player_name': player_name,
         'home_team': home_team,
         'total_pitches': total_pitches,
+        'innings_pitched': innings_pitched_str,
+        'strikeouts': strikeouts,
+        'walks': walks,
+        'hits': hits,
+        'hr': hr,
         'ERA': era,
         'WHIP': whip,
         'K/9': k_per_9,
@@ -103,15 +110,32 @@ def summarize_pitcher(df_pitcher):
 
 def process_data(start_dt, end_dt, n=5):
     df = fetch_data(start_dt, end_dt)
+    if df.empty:
+        return [], [], {}, {}
+        
     df = process_pitcher_data(df)
 
-    pitchers = df.groupby('pitcher')['pitch_type'].count().sort_values(ascending=False)
-    top_pitchers = pitchers.head(n).index
-    bottom_pitchers = pitchers.tail(n).index
+    # Identify starting pitchers by finding the first pitch of each game
+    starters = df.sort_values(by=['game_pk', 'inning', 'at_bat_number', 'pitch_number'], ascending=True)
+    starters = starters.groupby('game_pk')['pitcher'].first().unique()
+    
+    # Filter the main DataFrame to only include starters
+    starters_df = df[df['pitcher'].isin(starters)].copy()
+    
+    if starters_df.empty:
+        return [], [], {}, {}
+
+    # Rank starters by their total pitch counts
+    pitch_counts = starters_df.groupby('pitcher')['pitch_type'].count().sort_values(ascending=False)
+    
+    top_pitchers = pitch_counts.head(n).index
+    bottom_pitchers = pitch_counts.tail(n).index
+    
+    pitchers_to_process = top_pitchers.union(bottom_pitchers)
 
     all_pitchers_summary = {}
     general_stats = {}
-    for pitcher_id in pitchers.index:
+    for pitcher_id in pitchers_to_process:
         df_pitcher = df[df['pitcher'] == pitcher_id].copy()
         all_pitchers_summary[pitcher_id] = summarize_pitcher(df_pitcher)
         general_stats[pitcher_id] = compute_general_stats(df_pitcher)
@@ -124,11 +148,12 @@ def display_data(pitcher_ids, category, all_pitchers_summary, general_stats):
         stats = general_stats[pitcher_id]
         summary = all_pitchers_summary[pitcher_id]
         
-        print(
-            f"\n{category} STARTER: {stats['player_name']} vs {stats['home_team']} — "
-            f"Total Pitches: {stats['total_pitches']} | ERA: {stats['ERA']:.2f} | WHIP: {stats['WHIP']:.2f} | "
-            f"K/9: {stats['K/9']:.2f} | BB/9: {stats['BB/9']:.2f} | HR/9: {stats['HR/9']:.2f}"
+        header = (
+            f"\n{category} STARTER: {stats['player_name']} vs {stats['home_team']} — {stats['innings_pitched']} IP, {stats['total_pitches']} Pitches\n"
+            f"  Rates: ERA: {stats['ERA']:.2f} | WHIP: {stats['WHIP']:.2f} | K/9: {stats['K/9']:.2f} | BB/9: {stats['BB/9']:.2f}\n"
+            f"  Totals: {stats['strikeouts']} K | {stats['walks']} BB | {stats['hits']} H | {stats['hr']} HR"
         )
+        print(header)
         print(summary.to_string())
 
 # -----------------------------
