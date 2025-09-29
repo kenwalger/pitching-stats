@@ -16,93 +16,117 @@
             <input type="number" id="num_pitchers" name="num_pitchers" class="form-control" value="{{ num_pitchers }}">
         </div>
         <div class="col-auto">
-            <button type="submit" class="btn btn-primary">Get Data</button>
+            <button type="submit" id="submit-button" class="btn btn-primary">Get Data</button>
         </div>
     </form>
 
-    {% if top_pitchers_data %}
-        <div class="mt-4 p-3 border rounded bg-light">
-            <h5 class="mb-2">Legend</h5>
-            <p class="mb-1">
-                <span style="display: inline-block; width: 12px; height: 12px; background-color: #d4edda; border: 1px solid #c3e6cb;"></span>
-                <strong class="ms-1">Green:</strong> Significantly <strong>above</strong> MLB average for that pitch type.
-            </p>
-            <p class="mb-2">
-                <span style="display: inline-block; width: 12px; height: 12px; background-color: #f8d7da; border: 1px solid #f5c6cb;"></span>
-                <strong class="ms-1">Red:</strong> Significantly <strong>below</strong> MLB average for that pitch type.
-            </p>
-            <hr>
-            <small class="text-muted">
-                "Significantly" is defined as:
-                <ul>
-                    <li><strong>Average Speed:</strong> More than 2 MPH different from the MLB average.</li>
-                    <li><strong>Average Spin:</strong> More than 150 RPM different from the MLB average.</li>
-                </ul>
-            </small>
+    <div id="loading-spinner" class="d-none text-center mt-5">
+        <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
+        <p class="mt-2">Fetching and processing data, this may take a moment...</p>
+    </div>
 
-        <h2 class="mt-5">Top {{ num_pitchers }} Starters</h2>
-        {% for pitcher in top_pitchers_data %}
-            <div class="card mt-3">
-                <div class="card-header">
-                    <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
-                </div>
-                <div class="card-body">
-                    <p class="mb-1">
-                        <strong>Rates:</strong>
-                        ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
-                        WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
-                        K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
-                        BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
-                        HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
-                    </p>
-                    <p class="mb-2">
-                        <strong>Totals:</strong>
-                        {{ pitcher.stats.innings_pitched }} IP |
-                        {{ pitcher.stats.total_pitches }} Pitches |
-                        {{ pitcher.stats.strikeouts }} K |
-                        {{ pitcher.stats.walks }} BB |
-                        {{ pitcher.stats.hits }} H |
-                        {{ pitcher.stats.hr }} HR
-                    </p>
-                    <div class="table-responsive">
-                        {{ pitcher.summary|safe }}
+    <div id="results-container">
+        {% if top_pitchers_data %}
+            <div class="mt-4 p-3 border rounded bg-light">
+                <h5 class="mb-2">Legend</h5>
+                <p class="mb-1">
+                    <span style="display: inline-block; width: 12px; height: 12px; background-color: #d4edda; border: 1px solid #c3e6cb;"></span>
+                    <strong class="ms-1">Green:</strong> Significantly <strong>above</strong> MLB average for that pitch type.
+                </p>
+                <p class="mb-2">
+                    <span style="display: inline-block; width: 12px; height: 12px; background-color: #f8d7da; border: 1px solid #f5c6cb;"></span>
+                    <strong class="ms-1">Red:</strong> Significantly <strong>below</strong> MLB average for that pitch type.
+                </p>
+                <hr>
+                <small class="text-muted">
+                    "Significantly" is defined as:
+                    <ul>
+                        <li><strong>Average Speed:</strong> More than 2 MPH different from the MLB average.</li>
+                        <li><strong>Average Spin:</strong> More than 150 RPM different from the MLB average.</li>
+                    </ul>
+                </small>
+            </div>
+
+            <h2 class="mt-5">Top {{ num_pitchers }} Starters</h2>
+            {% for pitcher in top_pitchers_data %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1">
+                            <strong>Rates:</strong>
+                            ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
+                            WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
+                            K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
+                            BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
+                            HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Totals:</strong>
+                            {{ pitcher.stats.innings_pitched }} IP |
+                            {{ pitcher.stats.total_pitches }} Pitches |
+                            {{ pitcher.stats.strikeouts }} K |
+                            {{ pitcher.stats.walks }} BB |
+                            {{ pitcher.stats.hits }} H |
+                            {{ pitcher.stats.hr }} HR
+                        </p>
+                        <div class="table-responsive">
+                            {{ pitcher.summary|safe }}
+                        </div>
                     </div>
                 </div>
-            </div>
-        {% endfor %}
-    {% endif %}
+            {% endfor %}
+        {% endif %}
 
-    {% if bottom_pitchers_data %}
-        <h2 class="mt-5">Bottom {{ num_pitchers }} Starters</h2>
-        {% for pitcher in bottom_pitchers_data %}
-            <div class="card mt-3">
-                <div class="card-header">
-                    <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
-                </div>
-                <div class="card-body">
-                    <p class="mb-1">
-                        <strong>Rates:</strong>
-                        ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
-                        WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
-                        K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
-                        BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
-                        HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
-                    </p>
-                    <p class="mb-2">
-                        <strong>Totals:</strong>
-                        {{ pitcher.stats.innings_pitched }} IP |
-                        {{ pitcher.stats.total_pitches }} Pitches |
-                        {{ pitcher.stats.strikeouts }} K |
-                        {{ pitcher.stats.walks }} BB |
-                        {{ pitcher.stats.hits }} H |
-                        {{ pitcher.stats.hr }} HR
-                    </p>
-                    <div class="table-responsive">
-                        {{ pitcher.summary|safe }}
+        {% if bottom_pitchers_data %}
+            <h2 class="mt-5">Bottom {{ num_pitchers }} Starters</h2>
+            {% for pitcher in bottom_pitchers_data %}
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <strong>{{ pitcher.stats.player_name }}</strong> vs {{ pitcher.stats.home_team }}
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1">
+                            <strong>Rates:</strong>
+                            ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
+                            WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
+                            K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
+                            BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
+                            HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Totals:</strong>
+                            {{ pitcher.stats.innings_pitched }} IP |
+                            {{ pitcher.stats.total_pitches }} Pitches |
+                            {{ pitcher.stats.strikeouts }} K |
+                            {{ pitcher.stats.walks }} BB |
+                            {{ pitcher.stats.hits }} H |
+                            {{ pitcher.stats.hr }} HR
+                        </p>
+                        <div class="table-responsive">
+                            {{ pitcher.summary|safe }}
+                        </div>
                     </div>
                 </div>
-            </div>
-        {% endfor %}
-    {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function() {
+            // Disable the button to prevent multiple submissions
+            const submitButton = document.getElementById('submit-button');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+            
+            // Hide existing results
+            document.getElementById('results-container').style.display = 'none';
+
+            // Show the main loading spinner
+            document.getElementById('loading-spinner').classList.remove('d-none');
+        });
+    </script>
 {% endblock %}

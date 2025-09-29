@@ -126,3 +126,5 @@ dmypy.json
 .pyre/
 
 commit-message.txt
+tag-message.txt
+docs/

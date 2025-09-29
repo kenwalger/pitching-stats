@@ -1,6 +1,10 @@
 import pandas as pd
-from pybaseball import statcast
+from pybaseball import statcast, playerid_reverse_lookup
 from datetime import date, timedelta
+import warnings
+
+# Suppress FutureWarning from pybaseball
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def fetch_data(start_str, end_str):
@@ -13,12 +17,17 @@ def process_pitcher_data(df):
     whiff_map = {'swinging_strike': 1, 'swinging_strike_blocked': 1}
     csw_map = {'swinging_strike': 1, 'swinging_strike_blocked': 1, 'called_strike': 1}
 
+    # Avoid SettingWithCopyWarning
     df = df.copy()
     df['whiff'] = df['description'].map(lambda x: whiff_map.get(x, 0))
     df['csw'] = df['description'].map(lambda x: csw_map.get(x, 0))
     return df
 
+# A flag to ensure we only print debug info once
+debug_info_printed = False
+
 def compute_general_stats(df_pitcher):
+    # Approximate outs from events (simplified)
     # Drop rows where 'events' is NaN, as they don't represent the end of a plate appearance
     events = df_pitcher['events'].dropna()
 
@@ -60,8 +69,7 @@ def compute_general_stats(df_pitcher):
     player_name = df_pitcher['player_name'].iloc[0]
     home_team = df_pitcher['home_team'].iloc[0]
     total_pitches = len(df_pitcher)
-
-
+    
     return {
         'player_name': player_name,
         'home_team': home_team,
@@ -116,11 +124,11 @@ def process_data(start_dt, end_dt, n=5):
     df = process_pitcher_data(df)
 
     # Identify starting pitchers by finding the first pitch of each game
-    starters = df.sort_values(by=['game_pk', 'inning', 'at_bat_number', 'pitch_number'], ascending=True)
-    starters = starters.groupby('game_pk')['pitcher'].first().unique()
+    starters_mlbam_ids = df.sort_values(by=['game_pk', 'inning', 'at_bat_number', 'pitch_number'], ascending=True)
+    starters_mlbam_ids = starters_mlbam_ids.groupby('game_pk')['pitcher'].first().unique()
     
     # Filter the main DataFrame to only include starters
-    starters_df = df[df['pitcher'].isin(starters)].copy()
+    starters_df = df[df['pitcher'].isin(starters_mlbam_ids)].copy()
     
     if starters_df.empty:
         return [], [], {}, {}
