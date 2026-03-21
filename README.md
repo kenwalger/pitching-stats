@@ -81,5 +81,13 @@ High-level release notes live in [CHANGELOG.md](CHANGELOG.md). They are maintain
 git log --oneline
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, pull requests, and how to file issues.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for reporting vulnerabilities privately and notes on running the app safely in production.
+
 ---
 [LICENSE](LICENSE)
