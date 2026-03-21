@@ -1,5 +1,83 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% macro pitcher_card(pitcher, section, idx) %}
+                <div class="card mt-3 pitcher-detail-card" data-pitcher-card="{{ section }}-{{ idx }}">
+                    <div class="card-header">
+                        <strong>{{ pitcher.stats.player_name }}</strong> ({{ pitcher.stats.pitcher_team }}) vs {{ pitcher.stats.opponent_team }}
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1">
+                            <strong>Rates:</strong>
+                            ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
+                            WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
+                            K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
+                            BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
+                            HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Totals:</strong>
+                            {{ pitcher.stats.innings_pitched }} IP |
+                            {{ pitcher.stats.total_pitches }} Pitches |
+                            {{ pitcher.stats.strikeouts }} K |
+                            {{ pitcher.stats.walks }} BB |
+                            {{ pitcher.stats.hits }} H |
+                            {{ pitcher.stats.hr }} HR
+                        </p>
+                        <div class="table-responsive pitcher-summary-table">
+                            {{ pitcher.summary|safe }}
+                        </div>
+                        <div class="pitcher-viz mt-4">
+                            <h6 class="mb-3">Visualizations</h6>
+                            <ul class="nav nav-tabs" id="vizTabs-{{ section }}-{{ idx }}" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="arsenal-tab-{{ section }}-{{ idx }}" data-bs-toggle="tab" data-bs-target="#arsenal-pane-{{ section }}-{{ idx }}" type="button" role="tab" aria-controls="arsenal-pane-{{ section }}-{{ idx }}" aria-selected="true">Arsenal</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="location-tab-{{ section }}-{{ idx }}" data-bs-toggle="tab" data-bs-target="#location-pane-{{ section }}-{{ idx }}" type="button" role="tab" aria-controls="location-pane-{{ section }}-{{ idx }}" aria-selected="false">Location</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="velocity-tab-{{ section }}-{{ idx }}" data-bs-toggle="tab" data-bs-target="#velocity-pane-{{ section }}-{{ idx }}" type="button" role="tab" aria-controls="velocity-pane-{{ section }}-{{ idx }}" aria-selected="false">Velocity / Spin</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content border border-top-0 p-3 rounded-bottom bg-white">
+                                <div class="tab-pane fade show active" id="arsenal-pane-{{ section }}-{{ idx }}" role="tabpanel" aria-labelledby="arsenal-tab-{{ section }}-{{ idx }}" tabindex="0">
+                                    <div class="row g-3">
+                                        <div class="col-lg-6">
+                                            <p class="small text-muted mb-1">Pitch mix (% of pitches)</p>
+                                            <div class="chart-container pitcher-chart-wrap">
+                                                <canvas class="chart-arsenal-donut" aria-label="Pitch mix donut chart"></canvas>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <p class="small text-muted mb-1">Whiff rate vs CSW rate by pitch</p>
+                                            <div class="chart-container pitcher-chart-wrap">
+                                                <canvas class="chart-arsenal-radar" aria-label="Whiff and CSW radar chart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="location-pane-{{ section }}-{{ idx }}" role="tabpanel" aria-labelledby="location-tab-{{ section }}-{{ idx }}" tabindex="0">
+                                    <p class="small text-muted mb-1">Average location (ft); gray box = rule-book strike zone</p>
+                                    <div class="chart-container pitcher-chart-wrap pitcher-chart-wrap--tall">
+                                        <canvas class="chart-location-scatter" aria-label="Plate location scatter chart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="velocity-pane-{{ section }}-{{ idx }}" role="tabpanel" aria-labelledby="velocity-tab-{{ section }}-{{ idx }}" tabindex="0">
+                                    <p class="small text-muted mb-1">Bubble size = total pitches</p>
+                                    <div class="chart-container pitcher-chart-wrap pitcher-chart-wrap--tall">
+                                        <canvas class="chart-velocity-bubble" aria-label="Velocity and spin bubble chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+{% endmacro %}
+
 {% block content %}
     <h1 class="mt-4">Pitching Analysis</h1>
     <form action="/" method="post" class="row g-3 align-items-end">
@@ -27,6 +105,17 @@
         <p class="mt-2">Fetching and processing data, this may take a moment...</p>
     </div>
 
+    <style>
+        .pitcher-chart-wrap {
+            position: relative;
+            height: 260px;
+            max-width: 100%;
+        }
+        .pitcher-chart-wrap--tall {
+            height: 400px;
+        }
+    </style>
+
     <div id="results-container">
         {% if top_pitchers_data %}
             <div class="mt-4 p-3 border rounded bg-light">
@@ -51,82 +140,641 @@
 
             <h2 class="mt-5">Top {{ num_pitchers }} Starters</h2>
             {% for pitcher in top_pitchers_data %}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <strong>{{ pitcher.stats.player_name }}</strong> ({{ pitcher.stats.pitcher_team }}) vs {{ pitcher.stats.opponent_team }}
-                    </div>
-                    <div class="card-body">
-                        <p class="mb-1">
-                            <strong>Rates:</strong>
-                            ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
-                            WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
-                            K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
-                            BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
-                            HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
-                        </p>
-                        <p class="mb-2">
-                            <strong>Totals:</strong>
-                            {{ pitcher.stats.innings_pitched }} IP |
-                            {{ pitcher.stats.total_pitches }} Pitches |
-                            {{ pitcher.stats.strikeouts }} K |
-                            {{ pitcher.stats.walks }} BB |
-                            {{ pitcher.stats.hits }} H |
-                            {{ pitcher.stats.hr }} HR
-                        </p>
-                        <div class="table-responsive">
-                            {{ pitcher.summary|safe }}
-                        </div>
-                    </div>
-                </div>
+                {{ pitcher_card(pitcher, 'top', loop.index0) }}
             {% endfor %}
         {% endif %}
 
         {% if bottom_pitchers_data %}
             <h2 class="mt-5">Bottom {{ num_pitchers }} Starters</h2>
             {% for pitcher in bottom_pitchers_data %}
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <strong>{{ pitcher.stats.player_name }}</strong> ({{ pitcher.stats.pitcher_team }}) vs {{ pitcher.stats.opponent_team }}
-                    </div>
-                    <div class="card-body">
-                        <p class="mb-1">
-                            <strong>Rates:</strong>
-                            ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
-                            WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
-                            K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
-                            BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
-                            HR/9: {{ "%.2f"|format(pitcher.stats['HR/9']) }}
-                        </p>
-                        <p class="mb-2">
-                            <strong>Totals:</strong>
-                            {{ pitcher.stats.innings_pitched }} IP |
-                            {{ pitcher.stats.total_pitches }} Pitches |
-                            {{ pitcher.stats.strikeouts }} K |
-                            {{ pitcher.stats.walks }} BB |
-                            {{ pitcher.stats.hits }} H |
-                            {{ pitcher.stats.hr }} HR
-                        </p>
-                        <div class="table-responsive">
-                            {{ pitcher.summary|safe }}
-                        </div>
-                    </div>
-                </div>
+                {{ pitcher_card(pitcher, 'bottom', loop.index0) }}
             {% endfor %}
         {% endif %}
     </div>
 
     <script>
-        document.querySelector('form').addEventListener('submit', function() {
-            // Disable the button to prevent multiple submissions
-            const submitButton = document.getElementById('submit-button');
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
-            
-            // Hide existing results
-            document.getElementById('results-container').style.display = 'none';
+(function () {
+    const GREEN = 'rgba(212, 237, 218, 0.85)';
+    const GREEN_BORDER = 'rgba(195, 230, 203, 1)';
+    const RED = 'rgba(248, 215, 218, 0.85)';
+    const RED_BORDER = 'rgba(245, 198, 203, 1)';
+    const NEUTRAL = 'rgba(173, 181, 189, 0.75)';
+    const NEUTRAL_BORDER = 'rgba(108, 117, 125, 0.9)';
+    const ZONE_FILL = 'rgba(108, 117, 125, 0.12)';
+    const ZONE_STROKE = 'rgba(108, 117, 125, 0.75)';
 
-            // Show the main loading spinner
-            document.getElementById('loading-spinner').classList.remove('d-none');
+    /** Distinct hues for pitch types (same assignment across charts in a card). */
+    const PITCH_PALETTE_RGB = [
+        [54, 162, 235],
+        [255, 99, 132],
+        [75, 192, 192],
+        [255, 205, 86],
+        [153, 102, 255],
+        [255, 159, 64],
+        [46, 204, 113],
+        [231, 76, 60],
+        [155, 89, 182],
+        [52, 152, 219],
+        [241, 196, 15],
+        [26, 188, 156]
+    ];
+
+    const strikeZonePlugin = {
+        id: 'pitcherStrikeZoneBox',
+        beforeDatasetsDraw(chart) {
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+            if (!xScale || !yScale) return;
+            const xMin = -0.85, xMax = 0.85, zMin = 1.5, zMax = 3.5;
+            const left = xScale.getPixelForValue(xMin);
+            const right = xScale.getPixelForValue(xMax);
+            const pxTop = Math.min(yScale.getPixelForValue(zMax), yScale.getPixelForValue(zMin));
+            const pxBottom = Math.max(yScale.getPixelForValue(zMax), yScale.getPixelForValue(zMin));
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.fillStyle = ZONE_FILL;
+            ctx.strokeStyle = ZONE_STROKE;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.rect(left, pxTop, right - left, pxBottom - pxTop);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
+
+    function normalizeHeader(text) {
+        return String(text || '')
+            .replace(/\u00a0/g, ' ')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '_');
+    }
+
+    function parseNumericCell(text) {
+        if (text == null) return NaN;
+        const t = String(text).trim().replace(/,/g, '');
+        if (t === '' || t.toLowerCase() === 'nan') return NaN;
+        const pct = t.endsWith('%') ? t.slice(0, -1) : t;
+        const n = parseFloat(pct);
+        return Number.isFinite(n) ? n : NaN;
+    }
+
+    /** Table may show rates as decimals (0.25) or as percents (25). */
+    function rateToPercentDisplay(v) {
+        if (!Number.isFinite(v)) return 0;
+        if (v >= 0 && v <= 1) return v * 100;
+        return v;
+    }
+
+    function cellPerformanceTone(td) {
+        if (!td) return 'neutral';
+        const style = (td.getAttribute('style') || '').toLowerCase();
+        if (style.includes('#d4edda') || style.includes('rgb(212, 237, 218)')) return 'high';
+        if (style.includes('#f8d7da') || style.includes('rgb(248, 215, 218)')) return 'low';
+        return 'neutral';
+    }
+
+    function segmentColorFromRow(speedTone, spinTone) {
+        const hi = speedTone === 'high' || spinTone === 'high';
+        const lo = speedTone === 'low' || spinTone === 'low';
+        if (hi && !lo) return { bg: GREEN, border: GREEN_BORDER };
+        if (lo && !hi) return { bg: RED, border: RED_BORDER };
+        return { bg: NEUTRAL, border: NEUTRAL_BORDER };
+    }
+
+    function makePitchColorMap(rows) {
+        const keys = [];
+        const seen = {};
+        rows.forEach(function (r) {
+            const k = r.pitchType;
+            if (!seen[k]) {
+                seen[k] = true;
+                keys.push(k);
+            }
         });
+        keys.sort();
+        const map = {};
+        keys.forEach(function (name, idx) {
+            const c = PITCH_PALETTE_RGB[idx % PITCH_PALETTE_RGB.length];
+            map[name] = { r: c[0], g: c[1], b: c[2] };
+        });
+        return map;
+    }
+
+    function rowPitchFill(r, pitchMap, alpha) {
+        const rgb = pitchMap[r.pitchType];
+        if (!rgb) return 'rgba(173, 181, 189,' + alpha + ')';
+        return 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + alpha + ')';
+    }
+
+    /** Categorical fill uses pitch hue; border stays green/red vs league when highlighted. */
+    function rowPitchBorder(r, pitchMap) {
+        const hi = r.speedTone === 'high' || r.spinTone === 'high';
+        const lo = r.speedTone === 'low' || r.spinTone === 'low';
+        if (hi && !lo) return GREEN_BORDER;
+        if (lo && !hi) return RED_BORDER;
+        const rgb = pitchMap[r.pitchType];
+        if (!rgb) return NEUTRAL_BORDER;
+        return 'rgb(' + Math.round(rgb.r * 0.5) + ',' + Math.round(rgb.g * 0.5) + ',' + Math.round(rgb.b * 0.5) + ')';
+    }
+
+    function plateColumnsLookValid(rows) {
+        const xs = rows.map(function (r) { return r.avgPlateX; }).filter(Number.isFinite);
+        const zs = rows.map(function (r) { return r.avgPlateZ; }).filter(Number.isFinite);
+        if (!xs.length || !zs.length) return false;
+        const maxAbsX = Math.max.apply(null, xs.map(function (x) { return Math.abs(x); }));
+        const minZ = Math.min.apply(null, zs);
+        const maxZ = Math.max.apply(null, zs);
+        // Statcast means are in feet: horizontal ~[-3,3], height ~[0,6]
+        return maxAbsX <= 5 && minZ >= -0.5 && maxZ <= 6.5;
+    }
+
+    /**
+     * When headers/cells are still misaligned, find columns whose numeric values look
+     * like plate coordinates (not mph, RPM, rates, or pitch counts).
+     */
+    function discoverPlateColumnIndices(matrix) {
+        if (!matrix.length) return null;
+        const nCols = matrix[0].length;
+        let bestX = -1;
+        let bestXScore = -1;
+        let j;
+        for (j = 0; j < nCols; j++) {
+            const vals = matrix.map(function (row) { return parseNumericCell(row[j]); }).filter(Number.isFinite);
+            if (vals.length < 1) continue;
+            const maxAbs = Math.max.apply(null, vals.map(function (v) { return Math.abs(v); }));
+            if (maxAbs > 4.5) continue;
+            if (vals.every(function (v) { return v >= 0 && v <= 1; })) continue;
+            if (vals.some(function (v) { return v > 35; })) continue;
+            const score = 4.5 - maxAbs;
+            if (score > bestXScore) {
+                bestXScore = score;
+                bestX = j;
+            }
+        }
+        if (bestX < 0) return null;
+
+        let bestZ = -1;
+        let bestZDist = 1e9;
+        for (j = 0; j < nCols; j++) {
+            if (j === bestX) continue;
+            const vals = matrix.map(function (row) { return parseNumericCell(row[j]); }).filter(Number.isFinite);
+            if (vals.length < 1) continue;
+            const minV = Math.min.apply(null, vals);
+            const maxV = Math.max.apply(null, vals);
+            if (minV < -0.25 || maxV > 7) continue;
+            if (vals.every(function (v) { return v >= 0 && v <= 1; })) continue;
+            if (vals.some(function (v) { return v > 35; })) continue;
+            const mid = vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
+            const dist = Math.abs(mid - 2.5);
+            if (dist < bestZDist) {
+                bestZDist = dist;
+                bestZ = j;
+            }
+        }
+        if (bestZ < 0) return null;
+        return { px: bestX, pz: bestZ };
+    }
+
+    function applyDiscoveredPlateCoords(rows, matrix, disc) {
+        if (!disc || rows.length !== matrix.length) return;
+        let i;
+        for (i = 0; i < rows.length; i++) {
+            rows[i].avgPlateX = parseNumericCell(matrix[i][disc.px]);
+            rows[i].avgPlateZ = parseNumericCell(matrix[i][disc.pz]);
+        }
+    }
+
+    /**
+     * Styler's to_html() often emits a leading blank <th> in thead while tbody rows
+     * have one fewer <td>, shifting every column index. Pick a header row whose width
+     * matches the first data row, or trim leading empty headers until counts match.
+     */
+    function getAlignedHeaderLabels(table) {
+        const firstBodyRow = table.querySelector('tbody tr');
+        if (!firstBodyRow) return [];
+        const nData = firstBodyRow.querySelectorAll('td').length;
+        const theadRows = table.querySelectorAll('thead tr');
+
+        for (let r = theadRows.length - 1; r >= 0; r--) {
+            const thNodes = theadRows[r].querySelectorAll('th');
+            if (thNodes.length === nData) {
+                return Array.from(thNodes).map(function (th) {
+                    return normalizeHeader(th.textContent);
+                });
+            }
+        }
+
+        const lastRow = theadRows[theadRows.length - 1];
+        if (!lastRow) return [];
+        let headers = Array.from(lastRow.querySelectorAll('th')).map(function (th) {
+            return normalizeHeader(th.textContent);
+        });
+        while (headers.length > nData && headers[0] === '') {
+            headers.shift();
+        }
+        const extra = headers.length - nData;
+        if (extra > 0 && headers.slice(0, extra).every(function (h) { return h === ''; })) {
+            headers = headers.slice(extra);
+        }
+        return headers;
+    }
+
+    /**
+     * Parse pitcher summary rows from the pandas-generated table inside each card.
+     */
+    function parsePitcherSummaryTable(table) {
+        if (!table) return [];
+        const headers = getAlignedHeaderLabels(table);
+        if (!headers.length) return [];
+
+        function colIndex(...names) {
+            for (let i = 0; i < names.length; i++) {
+                const idx = headers.indexOf(names[i]);
+                if (idx >= 0) return idx;
+            }
+            return -1;
+        }
+        const idxPitch = colIndex('pitch_type');
+        const idxTotal = colIndex('total_pitches');
+        const idxPct = colIndex('pitch_percentage');
+        const idxSpeed = colIndex('avg_speed');
+        const idxSpin = colIndex('avg_spin');
+        const idxPx = colIndex('avg_plate_x', 'plate_x');
+        const idxPz = colIndex('avg_plate_z', 'plate_z');
+        const idxWhiff = colIndex('whiff_rate');
+        const idxCsw = colIndex('csw_rate');
+
+        const rows = [];
+        const matrix = [];
+        table.querySelectorAll('tbody tr').forEach(function (tr) {
+            const cells = tr.querySelectorAll('td');
+            if (!cells.length) return;
+            const rowTexts = Array.from(cells).map(function (td) { return td.textContent; });
+            const getText = function (idx) {
+                return idx >= 0 && cells[idx] ? cells[idx].textContent : '';
+            };
+            const pitchType = getText(idxPitch).trim();
+            if (!pitchType) return;
+
+            const totalPitches = parseNumericCell(getText(idxTotal));
+            const pitchPct = parseNumericCell(getText(idxPct));
+            const avgSpeed = parseNumericCell(getText(idxSpeed));
+            const avgSpin = parseNumericCell(getText(idxSpin));
+            const avgPlateX = parseNumericCell(getText(idxPx));
+            const avgPlateZ = parseNumericCell(getText(idxPz));
+            const whiffRate = parseNumericCell(getText(idxWhiff));
+            const cswRate = parseNumericCell(getText(idxCsw));
+
+            const speedTone = cellPerformanceTone(idxSpeed >= 0 ? cells[idxSpeed] : null);
+            const spinTone = cellPerformanceTone(idxSpin >= 0 ? cells[idxSpin] : null);
+
+            matrix.push(rowTexts);
+            rows.push({
+                pitchType: pitchType,
+                totalPitches: totalPitches,
+                pitchPct: pitchPct,
+                avgSpeed: avgSpeed,
+                avgSpin: avgSpin,
+                avgPlateX: avgPlateX,
+                avgPlateZ: avgPlateZ,
+                whiffRate: whiffRate,
+                cswRate: cswRate,
+                speedTone: speedTone,
+                spinTone: spinTone
+            });
+        });
+
+        if (rows.length && !plateColumnsLookValid(rows)) {
+            const disc = discoverPlateColumnIndices(matrix);
+            applyDiscoveredPlateCoords(rows, matrix, disc);
+        }
+
+        return rows;
+    }
+
+    /** Walk every .table-responsive in the card and use the first table that yields pitch rows. */
+    function parseCardPitcherRows(card) {
+        const wraps = card.querySelectorAll('.table-responsive');
+        for (let i = 0; i < wraps.length; i++) {
+            const table = wraps[i].querySelector('table');
+            if (!table) continue;
+            const rows = parsePitcherSummaryTable(table);
+            if (rows.length) return rows;
+        }
+        return [];
+    }
+
+    function destroyChartOnCanvas(canvas) {
+        if (canvas._pitcherChart) {
+            canvas._pitcherChart.destroy();
+            canvas._pitcherChart = null;
+        }
+    }
+
+    function bubbleRadius(totalPitches, maxPitches) {
+        if (!Number.isFinite(totalPitches) || totalPitches <= 0) return 6;
+        const maxR = 28;
+        const minR = 6;
+        if (!Number.isFinite(maxPitches) || maxPitches <= 0) return minR;
+        const t = Math.sqrt(totalPitches / maxPitches);
+        return minR + t * (maxR - minR);
+    }
+
+    /** One dataset per pitch type so Chart.js shows a color-keyed legend. */
+    const legendPitchTypes = {
+        display: true,
+        position: 'bottom',
+        labels: {
+            boxWidth: 10,
+            boxHeight: 10,
+            padding: 8,
+            font: { size: 11 },
+            usePointStyle: true,
+            pointStyle: 'circle'
+        }
+    };
+
+    function initArsenalCharts(card, rows) {
+        if (card.dataset.chartsArsenalInit === '1') return;
+        const donutEl = card.querySelector('.chart-arsenal-donut');
+        const radarEl = card.querySelector('.chart-arsenal-radar');
+        if (!donutEl || !radarEl || !rows.length) return;
+        card.dataset.chartsArsenalInit = '1';
+
+        const labels = rows.map(function (r) { return r.pitchType; });
+        const totalPitchesSum = rows.reduce(function (s, r) {
+            return s + (Number.isFinite(r.totalPitches) ? r.totalPitches : 0);
+        }, 0);
+        const pctData = rows.map(function (r) {
+            if (Number.isFinite(r.pitchPct)) return r.pitchPct;
+            if (totalPitchesSum > 0 && Number.isFinite(r.totalPitches)) {
+                return (r.totalPitches / totalPitchesSum) * 100;
+            }
+            return 0;
+        });
+        const pitchMap = makePitchColorMap(rows);
+        const donutColors = rows.map(function (r) { return rowPitchFill(r, pitchMap, 0.82); });
+        const donutBorders = rows.map(function (r) { return rowPitchBorder(r, pitchMap); });
+
+        destroyChartOnCanvas(donutEl);
+        donutEl._pitcherChart = new Chart(donutEl.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: pctData,
+                    backgroundColor: donutColors,
+                    borderColor: donutBorders,
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const v = ctx.raw;
+                                return ctx.label + ': ' + (typeof v === 'number' ? v.toFixed(2) + '%' : v);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const whiffPct = rows.map(function (r) { return rateToPercentDisplay(r.whiffRate); });
+        const cswPct = rows.map(function (r) { return rateToPercentDisplay(r.cswRate); });
+        const radarPointFill = rows.map(function (r) { return rowPitchFill(r, pitchMap, 0.65); });
+        const radarPointBorder = rows.map(function (r) { return rowPitchBorder(r, pitchMap); });
+
+        destroyChartOnCanvas(radarEl);
+        radarEl._pitcherChart = new Chart(radarEl.getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Whiff %',
+                        data: whiffPct,
+                        borderColor: 'rgba(13, 110, 253, 0.9)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.08)',
+                        borderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: radarPointFill,
+                        pointBorderColor: radarPointBorder,
+                        pointBorderWidth: 2
+                    },
+                    {
+                        label: 'CSW %',
+                        data: cswPct,
+                        borderColor: 'rgba(102, 16, 242, 0.9)',
+                        backgroundColor: 'rgba(102, 16, 242, 0.06)',
+                        borderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: radarPointFill,
+                        pointBorderColor: radarPointBorder,
+                        pointBorderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        suggestedMax: 100,
+                        ticks: {
+                            callback: function (v) { return v + '%'; }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const v = ctx.raw;
+                                return ctx.dataset.label + ': ' + (typeof v === 'number' ? v.toFixed(1) + '%' : v);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function initLocationChart(card, rows) {
+        if (card.dataset.chartsLocationInit === '1') return;
+        const canvas = card.querySelector('.chart-location-scatter');
+        if (!canvas) return;
+        const locRows = rows.filter(function (r) {
+            return Number.isFinite(r.avgPlateX) && Number.isFinite(r.avgPlateZ);
+        });
+        if (!locRows.length) return;
+        card.dataset.chartsLocationInit = '1';
+
+        const pitchMapLoc = makePitchColorMap(rows);
+        destroyChartOnCanvas(canvas);
+        canvas._pitcherChart = new Chart(canvas.getContext('2d'), {
+            type: 'scatter',
+            data: {
+                datasets: locRows.map(function (r) {
+                    return {
+                        label: r.pitchType,
+                        data: [{
+                            x: r.avgPlateX,
+                            y: r.avgPlateZ,
+                            pitchType: r.pitchType
+                        }],
+                        backgroundColor: rowPitchFill(r, pitchMapLoc, 0.72),
+                        borderColor: rowPitchBorder(r, pitchMapLoc),
+                        borderWidth: 2,
+                        pointRadius: 7,
+                        pointHoverRadius: 9
+                    };
+                })
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: legendPitchTypes,
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const p = ctx.raw;
+                                const name = p.pitchType || ctx.dataset.label || '';
+                                return name + ': x=' + p.x.toFixed(2) + ', z=' + p.y.toFixed(2) + ' ft';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: { display: true, text: 'Plate X (ft)' },
+                        min: -2.5,
+                        max: 2.5
+                    },
+                    y: {
+                        type: 'linear',
+                        title: { display: true, text: 'Plate Z (ft)' },
+                        min: 0,
+                        max: 5
+                    }
+                }
+            },
+            plugins: [strikeZonePlugin]
+        });
+    }
+
+    function initVelocityBubbleChart(card, rows) {
+        if (card.dataset.chartsVelocityInit === '1') return;
+        const canvas = card.querySelector('.chart-velocity-bubble');
+        if (!canvas) return;
+        const ok = rows.filter(function (r) {
+            return Number.isFinite(r.avgSpeed) && Number.isFinite(r.avgSpin) && Number.isFinite(r.totalPitches);
+        });
+        if (!ok.length) return;
+        card.dataset.chartsVelocityInit = '1';
+
+        const maxPitches = Math.max.apply(null, ok.map(function (r) { return r.totalPitches; }));
+
+        const pitchMapBubble = makePitchColorMap(rows);
+        destroyChartOnCanvas(canvas);
+        canvas._pitcherChart = new Chart(canvas.getContext('2d'), {
+            type: 'bubble',
+            data: {
+                datasets: ok.map(function (r) {
+                    return {
+                        label: r.pitchType,
+                        data: [{
+                            x: r.avgSpeed,
+                            y: r.avgSpin,
+                            r: bubbleRadius(r.totalPitches, maxPitches),
+                            pitchType: r.pitchType,
+                            totalPitches: r.totalPitches
+                        }],
+                        backgroundColor: rowPitchFill(r, pitchMapBubble, 0.52),
+                        borderColor: rowPitchBorder(r, pitchMapBubble),
+                        borderWidth: 2
+                    };
+                })
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: legendPitchTypes,
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const p = ctx.raw;
+                                const name = p.pitchType || ctx.dataset.label || '';
+                                return name + ': ' + p.x.toFixed(1) + ' mph, ' +
+                                    Math.round(p.y) + ' RPM, ' + p.totalPitches + ' pitches';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Avg speed (mph)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Avg spin (RPM)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function setupPitcherCard(card) {
+        const rows = parseCardPitcherRows(card);
+
+        initArsenalCharts(card, rows);
+
+        card.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
+            btn.addEventListener('shown.bs.tab', function () {
+                const target = btn.getAttribute('data-bs-target') || '';
+                if (target.indexOf('location-pane') !== -1) {
+                    initLocationChart(card, rows);
+                    if (card.querySelector('.chart-location-scatter')._pitcherChart) {
+                        card.querySelector('.chart-location-scatter')._pitcherChart.resize();
+                    }
+                }
+                if (target.indexOf('velocity-pane') !== -1) {
+                    initVelocityBubbleChart(card, rows);
+                    if (card.querySelector('.chart-velocity-bubble')._pitcherChart) {
+                        card.querySelector('.chart-velocity-bubble')._pitcherChart.resize();
+                    }
+                }
+            });
+        });
+    }
+
+    function initAllPitcherCharts() {
+        if (typeof Chart === 'undefined') return;
+        document.querySelectorAll('.pitcher-detail-card').forEach(setupPitcherCard);
+    }
+
+    document.addEventListener('DOMContentLoaded', initAllPitcherCharts);
+
+    document.querySelector('form').addEventListener('submit', function() {
+        const submitButton = document.getElementById('submit-button');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        document.getElementById('results-container').style.display = 'none';
+        document.getElementById('loading-spinner').classList.remove('d-none');
+    });
+})();
     </script>
 {% endblock %}
