@@ -24,9 +24,11 @@ def inject_render_demo():
         "render_demo_max_calendar_days": RENDER_DEMO_MAX_CALENDAR_DAYS,
     }
 
+
 def format_pitch_name(pitch_abbr):
     full_name = PITCH_TYPE_MAPPING.get(pitch_abbr, pitch_abbr)
     return full_name.replace('_', ' ').title()
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -45,20 +47,22 @@ def index():
         end_str = request.form['end_date']
         num_pitchers = int(request.form['num_pitchers'])
 
-        if is_render_environment():
-            try:
-                start_parsed = date.fromisoformat(start_str)
-                end_parsed = date.fromisoformat(end_str)
-            except ValueError:
-                range_error = "Invalid start or end date."
-            else:
-                if end_parsed < start_parsed:
-                    range_error = "End date must be on or after start date."
-                elif (end_parsed - start_parsed).days + 1 > RENDER_DEMO_MAX_CALENDAR_DAYS:
-                    range_error = (
-                        f"On this demo host you can request at most {RENDER_DEMO_MAX_CALENDAR_DAYS} calendar days "
-                        "at once. Run the app locally for longer ranges."
-                    )
+        try:
+            start_parsed = date.fromisoformat(start_str)
+            end_parsed = date.fromisoformat(end_str)
+        except ValueError:
+            range_error = "Invalid start or end date."
+        else:
+            if end_parsed < start_parsed:
+                range_error = "End date must be on or after start date."
+            elif (
+                is_render_environment()
+                and (end_parsed - start_parsed).days + 1 > RENDER_DEMO_MAX_CALENDAR_DAYS
+            ):
+                range_error = (
+                    f"On this demo host you can request at most {RENDER_DEMO_MAX_CALENDAR_DAYS} calendar days "
+                    "at once. Run the app locally for longer ranges."
+                )
 
         if range_error is None:
             top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = process_data(

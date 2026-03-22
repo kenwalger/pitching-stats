@@ -8,7 +8,8 @@ git log --format='%h %ad %s' --date=short
 
 ## 2026-03-22
 
-- **Hosted demo (Render)**: Detect `RENDER=true` (set automatically on Render web services). Cap each request to **14 calendar days** inclusive before calling `process_data`; show validation errors on the home form when the span is too long or invalid. Add a site-wide demo banner under the nav and a short note under the date form on the index page. README explains demo vs. local runs and how to set `RENDER=true` locally to test the same behavior.
+- **Hosted demo (Render)**: Detect `RENDER=true` (set automatically on Render web services). Cap each request to **14 calendar days** inclusive before calling `process_data`; show validation errors on the home form when the span is too long. Add a site-wide demo banner under the nav and a short note under the date form on the index page. README explains demo vs. local runs and how to set `RENDER=true` locally to test the same behavior.
+- **Form validation**: On POST, always validate ISO start/end dates and that the end date is not before the start date (all environments). The 14-day span check applies only when `RENDER=true`.
 
 ## 2026-03-21
 
