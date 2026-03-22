@@ -6,6 +6,11 @@ All notable changes to this project are summarized here. Entries are grouped by 
 git log --format='%h %ad %s' --date=short
 ```
 
+## 2026-03-22
+
+- **Hosted demo (Render)**: Detect `RENDER=true` (set automatically on Render web services). Cap each request to **14 calendar days** inclusive before calling `process_data`; show validation errors on the home form when the span is too long. Add a site-wide demo banner under the nav and a short note under the date form on the index page. README explains demo vs. local runs and how to set `RENDER=true` locally to test the same behavior.
+- **Form validation**: On POST, validate ISO dates, end ≥ start, and **Top/Bottom N** (empty → 5, integer required, bounds 1–100) before `process_data`; use `request.form.get` for safe reads. The 14-day span check applies only when `RENDER=true`. Top/Bottom N uses one parse pass (`n_top_bottom` / `n_parse_ok`) for both template repopulation and gating. `RENDER` is resolved once per request via `flask.g` in `before_request` and read through `is_render_environment()` (with a fallback when there is no app context). The index form’s number input exposes `min`/`max`/`step` aligned with server limits.
+
 ## 2026-03-21
 
 - **Deployment**: Add Render Blueprint (`render.yaml`); bind Gunicorn to `0.0.0.0:$PORT` in the `Procfile`.
