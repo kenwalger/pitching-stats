@@ -80,6 +80,9 @@
 
 {% block content %}
     <h1 class="mt-4">Pitching Analysis</h1>
+    {% if range_error %}
+    <div class="alert alert-warning" role="alert">{{ range_error }}</div>
+    {% endif %}
     <form action="/" method="post" class="row g-3 align-items-end">
         <div class="col-auto">
             <label for="start_date" class="form-label">Start Date:</label>
@@ -97,6 +100,9 @@
             <button type="submit" id="submit-button" class="btn btn-primary">Get Data</button>
         </div>
     </form>
+    {% if demo_mode %}
+    <p class="text-muted small mt-2 mb-0">On this host, date ranges are limited to {{ render_demo_max_calendar_days }} calendar days (inclusive) per request.</p>
+    {% endif %}
 
     <div id="loading-spinner" class="d-none text-center mt-5">
         <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">

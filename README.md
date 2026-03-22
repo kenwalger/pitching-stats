@@ -2,6 +2,8 @@
 
 This project provides a web application and a command-line interface to analyze MLB pitcher performance data. It fetches data using `pybaseball`, processes it, and displays detailed summaries for starting pitchers over a given date range.
 
+The hosted version on Render is intended as a **lightweight demo**: date ranges are capped (currently 14 calendar days per request) to stay within typical free-tier memory limits, and the UI shows a short demo banner. **Large date-range queries may still exceed the limits of the free hosting tier** or time out—run the app locally for heavier analyses.
+
 ## Key Features
 
 -   **Accurate Starter Identification**: The app automatically identifies the true starting pitcher for each game, ensuring the analysis is focused and relevant.
@@ -68,7 +70,7 @@ python main.py --start_date YYYY-MM-DD --end_date YYYY-MM-DD --n 10
 
 The app is served in production with **Gunicorn** (`Procfile`: `web: gunicorn app:app --bind 0.0.0.0:$PORT`).
 
--   **[Render](https://render.com/)**: A `render.yaml` Blueprint defines a Python web service (install via `requirements.txt`, start command with bind and health check on `/`). Connect the repo in the Render dashboard under **New → Blueprint**, or create a Web Service and match those settings.
+-   **[Render](https://render.com/)**: A `render.yaml` Blueprint defines a Python web service (install via `requirements.txt`, start command with bind and health check on `/`). Connect the repo in the Render dashboard under **New → Blueprint**, or create a Web Service and match those settings. Render sets the environment variable `RENDER=true` automatically; the app uses that to enable demo mode (banner + max 14-day inclusive window). To mimic that locally, run with `RENDER=true` in your environment.
 -   **Heroku-style hosts**: The same `Procfile` pattern applies anywhere a `PORT` environment variable is set.
 
 Python version is pinned for consistency (see `.python-version` and `render.yaml`).

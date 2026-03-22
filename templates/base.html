@@ -38,6 +38,12 @@
         </div>
     </nav>
 
+    {% if demo_mode %}
+    <div class="alert alert-info text-center mb-0 rounded-0 border-0 border-bottom py-2 small" role="status">
+        Demo mode: shorter date ranges only. Larger analyses are better run locally.
+    </div>
+    {% endif %}
+
     <div class="container">
         {% block content %}{% endblock %}
     </div>
