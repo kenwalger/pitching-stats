@@ -9,7 +9,7 @@ git log --format='%h %ad %s' --date=short
 ## 2026-03-22
 
 - **Hosted demo (Render)**: Detect `RENDER=true` (set automatically on Render web services). Cap each request to **14 calendar days** inclusive before calling `process_data`; show validation errors on the home form when the span is too long. Add a site-wide demo banner under the nav and a short note under the date form on the index page. README explains demo vs. local runs and how to set `RENDER=true` locally to test the same behavior.
-- **Form validation**: On POST, always validate ISO start/end dates and that the end date is not before the start date (all environments). Parse **Top/Bottom N** safely: empty field defaults to 5; non-integers show an error; values must fall between 1 and 100 before `process_data` runs. The 14-day span check applies only when `RENDER=true`. Date and number fields use `request.form.get` so missing keys surface as validation errors instead of a 500.
+- **Form validation**: On POST, always validate ISO start/end dates and that the end date is not before the start date (all environments). Parse **Top/Bottom N** safely: empty field defaults to 5; non-integers show an error; values must fall between 1 and 100 before `process_data` runs. The 14-day span check applies only when `RENDER=true`. Date and number fields use `request.form.get` so missing keys surface as validation errors instead of a 500. Top/Bottom N is parsed once for both validation and the template value so invalid strings never populate `type="number"` (avoids browsers clearing the field); `is_render_environment()` is read once per POST in the route as `render_host`.
 
 ## 2026-03-21
 

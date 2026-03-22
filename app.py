@@ -45,9 +45,11 @@ def index():
     range_error = None
 
     if request.method == 'POST':
+        render_host = is_render_environment()
         start_str = request.form.get('start_date', '')
         end_str = request.form.get('end_date', '')
         raw_num_pitchers = request.form.get('num_pitchers', '')
+        raw_num_trim = (raw_num_pitchers or '').strip()
 
         try:
             start_parsed = date.fromisoformat(start_str)
@@ -58,7 +60,7 @@ def index():
             if end_parsed < start_parsed:
                 range_error = "End date must be on or after start date."
             elif (
-                is_render_environment()
+                render_host
                 and (end_parsed - start_parsed).days + 1 > RENDER_DEMO_MAX_CALENDAR_DAYS
             ):
                 range_error = (
@@ -66,29 +68,31 @@ def index():
                     "at once. Run the app locally for longer ranges."
                 )
 
-        raw_num_trim = (raw_num_pitchers or '').strip()
-
         if raw_num_trim == '':
-            num_pitchers = 5
+            parsed_int_top_bottom = 5
         else:
-            num_pitchers = raw_num_trim
+            try:
+                parsed_int_top_bottom = int(raw_num_trim)
+            except ValueError:
+                parsed_int_top_bottom = None
+
+        num_pitchers = parsed_int_top_bottom if parsed_int_top_bottom is not None else 5
 
         parsed_num_pitchers = None
         if range_error is None:
             if raw_num_trim == '':
                 parsed_num_pitchers = 5
+            elif parsed_int_top_bottom is None:
+                range_error = "Top/Bottom N must be a whole number."
+            elif (
+                parsed_int_top_bottom < NUM_PITCHERS_MIN
+                or parsed_int_top_bottom > NUM_PITCHERS_MAX
+            ):
+                range_error = (
+                    f"Top/Bottom N must be between {NUM_PITCHERS_MIN} and {NUM_PITCHERS_MAX}."
+                )
             else:
-                try:
-                    parsed_num_pitchers = int(raw_num_trim)
-                except ValueError:
-                    range_error = "Top/Bottom N must be a whole number."
-                else:
-                    if parsed_num_pitchers < NUM_PITCHERS_MIN or parsed_num_pitchers > NUM_PITCHERS_MAX:
-                        range_error = (
-                            f"Top/Bottom N must be between {NUM_PITCHERS_MIN} and {NUM_PITCHERS_MAX}."
-                        )
-                    else:
-                        num_pitchers = parsed_num_pitchers
+                parsed_num_pitchers = parsed_int_top_bottom
 
         if range_error is None:
             top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = process_data(
