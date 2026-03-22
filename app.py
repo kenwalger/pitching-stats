@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request
+from flask import Flask, g, render_template, request
 from datetime import date, timedelta
 import pandas as pd
 from data_processing import process_data
@@ -16,7 +16,15 @@ NUM_PITCHERS_MAX = 100
 
 
 def is_render_environment():
-    return os.environ.get("RENDER", "").strip().lower() == "true"
+    try:
+        return g.render_host
+    except RuntimeError:
+        return os.environ.get("RENDER", "").strip().lower() == "true"
+
+
+@app.before_request
+def _cache_render_environment():
+    g.render_host = os.environ.get("RENDER", "").strip().lower() == "true"
 
 
 @app.context_processor
@@ -24,6 +32,8 @@ def inject_render_demo():
     return {
         "demo_mode": is_render_environment(),
         "render_demo_max_calendar_days": RENDER_DEMO_MAX_CALENDAR_DAYS,
+        "num_pitchers_input_min": NUM_PITCHERS_MIN,
+        "num_pitchers_input_max": NUM_PITCHERS_MAX,
     }
 
 
@@ -45,7 +55,6 @@ def index():
     range_error = None
 
     if request.method == 'POST':
-        render_host = is_render_environment()
         start_str = request.form.get('start_date', '')
         end_str = request.form.get('end_date', '')
         raw_num_pitchers = request.form.get('num_pitchers', '')
@@ -60,7 +69,7 @@ def index():
             if end_parsed < start_parsed:
                 range_error = "End date must be on or after start date."
             elif (
-                render_host
+                is_render_environment()
                 and (end_parsed - start_parsed).days + 1 > RENDER_DEMO_MAX_CALENDAR_DAYS
             ):
                 range_error = (
@@ -69,30 +78,28 @@ def index():
                 )
 
         if raw_num_trim == '':
-            parsed_int_top_bottom = 5
+            n_top_bottom = 5
+            n_parse_ok = True
         else:
             try:
-                parsed_int_top_bottom = int(raw_num_trim)
+                n_top_bottom = int(raw_num_trim)
+                n_parse_ok = True
             except ValueError:
-                parsed_int_top_bottom = None
+                n_top_bottom = None
+                n_parse_ok = False
 
-        num_pitchers = parsed_int_top_bottom if parsed_int_top_bottom is not None else 5
+        num_pitchers = n_top_bottom if n_parse_ok else 5
 
         parsed_num_pitchers = None
         if range_error is None:
-            if raw_num_trim == '':
-                parsed_num_pitchers = 5
-            elif parsed_int_top_bottom is None:
+            if not n_parse_ok:
                 range_error = "Top/Bottom N must be a whole number."
-            elif (
-                parsed_int_top_bottom < NUM_PITCHERS_MIN
-                or parsed_int_top_bottom > NUM_PITCHERS_MAX
-            ):
+            elif n_top_bottom < NUM_PITCHERS_MIN or n_top_bottom > NUM_PITCHERS_MAX:
                 range_error = (
                     f"Top/Bottom N must be between {NUM_PITCHERS_MIN} and {NUM_PITCHERS_MAX}."
                 )
             else:
-                parsed_num_pitchers = parsed_int_top_bottom
+                parsed_num_pitchers = n_top_bottom
 
         if range_error is None:
             top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = process_data(

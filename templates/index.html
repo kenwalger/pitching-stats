@@ -94,7 +94,7 @@
         </div>
         <div class="col-auto">
             <label for="num_pitchers" class="form-label">Top/Bottom N:</label>
-            <input type="number" id="num_pitchers" name="num_pitchers" class="form-control" value="{{ num_pitchers }}">
+            <input type="number" id="num_pitchers" name="num_pitchers" class="form-control" min="{{ num_pitchers_input_min }}" max="{{ num_pitchers_input_max }}" step="1" value="{{ num_pitchers }}">
         </div>
         <div class="col-auto">
             <button type="submit" id="submit-button" class="btn btn-primary">Get Data</button>
