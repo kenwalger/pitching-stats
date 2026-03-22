@@ -11,6 +11,8 @@ app = Flask(__name__)
 
 # Render sets RENDER=true on web services (https://render.com/docs/environment-variables)
 RENDER_DEMO_MAX_CALENDAR_DAYS = 14
+NUM_PITCHERS_MIN = 1
+NUM_PITCHERS_MAX = 100
 
 
 def is_render_environment():
@@ -43,9 +45,9 @@ def index():
     range_error = None
 
     if request.method == 'POST':
-        start_str = request.form['start_date']
-        end_str = request.form['end_date']
-        num_pitchers = int(request.form['num_pitchers'])
+        start_str = request.form.get('start_date', '')
+        end_str = request.form.get('end_date', '')
+        raw_num_pitchers = request.form.get('num_pitchers', '')
 
         try:
             start_parsed = date.fromisoformat(start_str)
@@ -64,9 +66,33 @@ def index():
                     "at once. Run the app locally for longer ranges."
                 )
 
+        raw_num_trim = (raw_num_pitchers or '').strip()
+
+        if raw_num_trim == '':
+            num_pitchers = 5
+        else:
+            num_pitchers = raw_num_trim
+
+        parsed_num_pitchers = None
+        if range_error is None:
+            if raw_num_trim == '':
+                parsed_num_pitchers = 5
+            else:
+                try:
+                    parsed_num_pitchers = int(raw_num_trim)
+                except ValueError:
+                    range_error = "Top/Bottom N must be a whole number."
+                else:
+                    if parsed_num_pitchers < NUM_PITCHERS_MIN or parsed_num_pitchers > NUM_PITCHERS_MAX:
+                        range_error = (
+                            f"Top/Bottom N must be between {NUM_PITCHERS_MIN} and {NUM_PITCHERS_MAX}."
+                        )
+                    else:
+                        num_pitchers = parsed_num_pitchers
+
         if range_error is None:
             top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = process_data(
-                start_str, end_str, num_pitchers
+                start_str, end_str, parsed_num_pitchers
             )
 
             top_pitchers_data = []
@@ -103,6 +129,7 @@ def index():
 @app.route('/pitch-types')
 def pitch_types():
     return render_template('pitch_types.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
