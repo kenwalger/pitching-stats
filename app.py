@@ -1,11 +1,9 @@
 import os
 from flask import Flask, g, render_template, request
 from datetime import date, timedelta
-import pandas as pd
 from data_processing import process_data
 from helper_functions.style import style_summary_df
 from constants.pitch_type_mapping import PITCH_TYPE_MAPPING
-
 
 app = Flask(__name__)
 
@@ -37,12 +35,18 @@ def inject_render_demo():
     }
 
 
-def format_pitch_name(pitch_abbr):
+def format_pitch_name(pitch_abbr: str) -> str:
+    """Convert a Statcast pitch code to a display name.
+
+    :param pitch_abbr: Statcast pitch type code, such as ``"ST"``.
+    :return: A title-cased name such as ``"Sweeper"``, or the code itself if it
+        is not in :data:`PITCH_TYPE_MAPPING`.
+    """
     full_name = PITCH_TYPE_MAPPING.get(pitch_abbr, pitch_abbr)
-    return full_name.replace('_', ' ').title()
+    return full_name.replace("_", " ").title()
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def index():
     start_dt = date.today() - timedelta(days=5)
     end_dt = date.today()
@@ -54,11 +58,11 @@ def index():
     bottom_pitchers_data = None
     range_error = None
 
-    if request.method == 'POST':
-        start_str = request.form.get('start_date', '')
-        end_str = request.form.get('end_date', '')
-        raw_num_pitchers = request.form.get('num_pitchers', '')
-        raw_num_trim = (raw_num_pitchers or '').strip()
+    if request.method == "POST":
+        start_str = request.form.get("start_date", "")
+        end_str = request.form.get("end_date", "")
+        raw_num_pitchers = request.form.get("num_pitchers", "")
+        raw_num_trim = (raw_num_pitchers or "").strip()
 
         try:
             start_parsed = date.fromisoformat(start_str)
@@ -77,7 +81,7 @@ def index():
                     "at once. Run the app locally for longer ranges."
                 )
 
-        if raw_num_trim == '':
+        if raw_num_trim == "":
             n_top_bottom = 5
             n_parse_ok = True
         else:
@@ -93,41 +97,51 @@ def index():
         parsed_num_pitchers = None
         if range_error is None:
             if not n_parse_ok:
-                range_error = "Top/Bottom N must be a whole number."
+                range_error = "Starters per list must be a whole number."
             elif n_top_bottom < NUM_PITCHERS_MIN or n_top_bottom > NUM_PITCHERS_MAX:
-                range_error = (
-                    f"Top/Bottom N must be between {NUM_PITCHERS_MIN} and {NUM_PITCHERS_MAX}."
-                )
+                range_error = f"Starters per list must be between {NUM_PITCHERS_MIN} and {NUM_PITCHERS_MAX}."
             else:
                 parsed_num_pitchers = n_top_bottom
 
         if range_error is None:
-            top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = process_data(
-                start_str, end_str, parsed_num_pitchers
+            top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = (
+                process_data(start_str, end_str, parsed_num_pitchers)
             )
 
             top_pitchers_data = []
             for pitcher_id in top_pitchers:
                 summary_df = all_pitchers_summary[pitcher_id].copy()
-                summary_df['pitch_type'] = summary_df['pitch_type'].apply(format_pitch_name)
+                summary_df["pitch_type"] = summary_df["pitch_type"].apply(
+                    format_pitch_name
+                )
                 styled_summary = style_summary_df(summary_df)
-                top_pitchers_data.append({
-                    'stats': general_stats[pitcher_id],
-                    'summary': styled_summary.to_html(classes='table table-striped table-bordered', index=False)
-                })
+                top_pitchers_data.append(
+                    {
+                        "stats": general_stats[pitcher_id],
+                        "summary": styled_summary.to_html(
+                            classes="table table-striped table-bordered", index=False
+                        ),
+                    }
+                )
 
             bottom_pitchers_data = []
             for pitcher_id in bottom_pitchers:
                 summary_df = all_pitchers_summary[pitcher_id].copy()
-                summary_df['pitch_type'] = summary_df['pitch_type'].apply(format_pitch_name)
+                summary_df["pitch_type"] = summary_df["pitch_type"].apply(
+                    format_pitch_name
+                )
                 styled_summary = style_summary_df(summary_df)
-                bottom_pitchers_data.append({
-                    'stats': general_stats[pitcher_id],
-                    'summary': styled_summary.to_html(classes='table table-striped table-bordered', index=False)
-                })
+                bottom_pitchers_data.append(
+                    {
+                        "stats": general_stats[pitcher_id],
+                        "summary": styled_summary.to_html(
+                            classes="table table-striped table-bordered", index=False
+                        ),
+                    }
+                )
 
     return render_template(
-        'index.html',
+        "index.html",
         start_date=start_str,
         end_date=end_str,
         num_pitchers=num_pitchers,
@@ -137,10 +151,10 @@ def index():
     )
 
 
-@app.route('/pitch-types')
+@app.route("/pitch-types")
 def pitch_types():
-    return render_template('pitch_types.html')
+    return render_template("pitch_types.html")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)

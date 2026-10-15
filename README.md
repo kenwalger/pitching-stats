@@ -6,8 +6,11 @@ The hosted version on Render is intended as a **lightweight demo**: date ranges 
 
 ## Key Features
 
--   **Accurate Starter Identification**: The app automatically identifies the true starting pitcher for each game, ensuring the analysis is focused and relevant.
--   **Contextual Statistics**: Displays both raw totals (IP, K, BB, HR) and calculated rate stats (ERA, WHIP, K/9) to provide a complete picture of a pitcher's performance.
+-   **Starter Identification**: Finds both starting pitchers in every game (the first pitcher in the top of the first is the home starter, the first in the bottom of the first is the road starter). Stats include only pitches thrown in a pitcher's starts; relief appearances in the same date range are excluded.
+-   **Contextual Statistics**: Displays raw totals (GS, IP, R, K, BB, H, HR) and rate stats (R/9, WHIP, K/9, BB/9, HR/9).
+    -   **R/9, not ERA.** Statcast pitch data does not record earned runs, so the app reports runs that scored while the pitcher was on the mound, per nine innings. It is not earned and does not reassign inherited runners, so it will not match official ERA.
+-   **Workload Ranking**: Starters are listed by total pitches thrown (most and fewest). This measures workload, not quality. If there are fewer starters than two full lists, no pitcher appears in both.
+-   **Postseason Ready**: `pybaseball` requests regular season, postseason, and spring training games, so a postseason date range works with no extra settings. An entire World Series fits inside the hosted demo's 14-day window.
 -   **Performance Highlighting**: Pitch speed and spin rates are automatically color-coded (red/green) if they are significantly different from the MLB average for that pitch type, making it easy to spot exceptional performances.
 -   **Interactive Charts (Web UI)**: After you submit the form, each pitcher card includes a **Visualizations** section (Bootstrap tabs) powered by [Chart.js](https://www.chartjs.org/) via `templates/base.html` (`extra_head`) and logic in `templates/index.html`:
     -   **Arsenal** — Doughnut chart of pitch mix (`pitch_percentage`, with fallback from counts) and a radar chart of whiff rate vs. CSW rate by pitch type. Vertices on the radar use the same per-pitch colors as the donut.
@@ -16,7 +19,7 @@ The hosted version on Render is intended as a **lightweight demo**: date ranges 
     **Colors**: Each pitch type gets a consistent hue across charts (fixed palette, sorted by name). **Borders** use green or red when average speed or spin is highlighted vs. MLB in the table; otherwise a darker shade of that pitch’s color. **Parsing**: The script walks `.table-responsive` blocks, aligns `thead`/`tbody` column counts (pandas Styler often adds a blank corner `<th>`), and can rediscover plate-location columns by value ranges if headers and cells are still misaligned.
 -   **Detailed Legend**: A clear on-page legend explains the thresholds for performance highlighting.
 -   **Web Interface & CLI**: A user-friendly Flask web app for visual analysis and a command-line interface for quick terminal-based queries.
--   **Pitch Type Reference**: A dedicated page in the "Resources" section provides a handy reference for pitch type abbreviations.
+-   **Pitch Type Reference**: A dedicated page in the "Resources" section lists the current Statcast pitch codes. Note that `ST` is the sweeper and `SV` is the slurve; Statcast classifies most two-seamers as sinkers (`SI`). Pitch types without a league average on file are displayed but not color-coded.
 
 ## Setup
 
@@ -47,13 +50,13 @@ To start the Flask web server:
 python app.py
 ```
 
-Open your web browser and navigate to `http://127.0.0.1:5000`. You can then select a date range and the number of top/bottom starters to view. Charts appear under each pitcher’s summary table after results load; Location and Velocity/Spin tabs include Chart.js legends keyed by pitch type.
+Open your web browser and navigate to `http://127.0.0.1:5000`. You can then select a date range and the number of starters to show in each list. Charts appear under each pitcher’s summary table after results load; Location and Velocity/Spin tabs include Chart.js legends keyed by pitch type.
 
 ### Command-Line Interface
 
 You can also run the analysis from the command line.
 
-**Default (last 5 days, top/bottom 5 starters):**
+**Default (last 5 days, 5 starters per list):**
 ```bash
 python main.py
 ```
@@ -64,7 +67,16 @@ python main.py --start_date YYYY-MM-DD --end_date YYYY-MM-DD --n 10
 ```
 -   `--start_date`: The start date for the data query.
 -   `--end_date`: The end date for the data query.
--   `--n`: The number of top and bottom starters to display.
+-   `--n`: The number of starters in each list (most and fewest pitches thrown).
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The tests use synthetic Statcast rows, so they run offline. Each one is written to fail against the bug it guards against (for example, the starter test fails if road starters are dropped).
 
 ## Deployment
 
