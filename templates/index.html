@@ -12,6 +12,7 @@
                     <div class="card-body">
                         <p class="mb-1">
                             <strong>Rates:</strong>
+                            <abbr title="Called strikes plus whiffs, as a share of all pitches. Used for the effectiveness ranking.">CSW%</abbr>: {{ "n/a" if pitcher.stats.csw_rate is none else "%.1f%%"|format(pitcher.stats.csw_rate * 100) }} |
                             <abbr title="Runs scored while this pitcher was pitching, per nine innings. Not earned runs, so this is not ERA.">R/9</abbr>: {{ "n/a" if pitcher.stats['R/9'] is none else "%.2f"|format(pitcher.stats['R/9']) }} |
                             WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
                             K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
@@ -95,7 +96,7 @@
             <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date }}">
         </div>
         <div class="col-auto">
-            <label for="num_pitchers" class="form-label" title="Starters are ranked by total pitches thrown in their starts, not by performance.">Starters per list:</label>
+            <label for="num_pitchers" class="form-label" title="Starters are ranked by CSW% (called strikes plus whiffs), minimum 75 pitches in their starts.">Starters per list:</label>
             <input type="number" id="num_pitchers" name="num_pitchers" class="form-control" min="{{ num_pitchers_input_min }}" max="{{ num_pitchers_input_max }}" step="1" value="{{ num_pitchers }}">
         </div>
         <div class="col-auto">
@@ -149,20 +150,26 @@
                 <small class="text-muted">
                     <ul class="mb-0">
                         <li><strong>Starts only:</strong> stats include only pitches thrown in games the pitcher started. Relief appearances in the same date range are excluded.</li>
-                        <li><strong>Ranking:</strong> starters are ranked by total pitches thrown, a measure of workload, not quality.</li>
+                        <li><strong>Effectiveness:</strong> starters are ranked by CSW%, the share of pitches that end in a called strike or a whiff. Only starters with at least 75 pitches in their starts qualify.</li>
                         <li><strong>R/9:</strong> runs scored while the pitcher was on the mound, per nine innings. Statcast does not record earned runs, so this is not ERA and will not match official figures.</li>
                     </ul>
                 </small>
             </div>
 
-            <h2 class="mt-5">Most Pitches Thrown: {{ top_pitchers_data|length }} Starters</h2>
+            <h2 class="mt-5">Most Effective: {{ top_pitchers_data|length }} Starters</h2>
+            <p class="text-muted">Ranked by CSW%, highest first. Minimum 75 pitches in starts.</p>
             {% for pitcher in top_pitchers_data %}
                 {{ pitcher_card(pitcher, 'top', loop.index0) }}
             {% endfor %}
+        {% elif top_pitchers_data is not none %}
+            <div class="alert alert-info mt-4" role="alert">
+                No starter threw at least 75 pitches in their starts during this date range, so nobody qualifies for the effectiveness rankings. Try a longer range.
+            </div>
         {% endif %}
 
         {% if bottom_pitchers_data %}
-            <h2 class="mt-5">Fewest Pitches Thrown: {{ bottom_pitchers_data|length }} Starters</h2>
+            <h2 class="mt-5">Least Effective: {{ bottom_pitchers_data|length }} Starters</h2>
+            <p class="text-muted">Ranked by CSW%, lowest first. Minimum 75 pitches in starts.</p>
             {% for pitcher in bottom_pitchers_data %}
                 {{ pitcher_card(pitcher, 'bottom', loop.index0) }}
             {% endfor %}
