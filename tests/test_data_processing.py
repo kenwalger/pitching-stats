@@ -177,11 +177,58 @@ def test_r9_differs_from_hr9_when_runs_score_without_homers() -> None:
     assert stats["R/9"] == pytest.approx(9.0)
 
 
+def _ranking_rows(pitcher: int, pitches: int, csw: int) -> pd.DataFrame:
+    """Rows for one pitcher: ``pitches`` pitches, the first ``csw`` of them CSW."""
+    return pd.DataFrame(
+        {
+            "pitcher": [pitcher] * pitches,
+            "csw": [1] * csw + [0] * (pitches - csw),
+        }
+    )
+
+
+def test_rank_starters_orders_by_csw_not_pitch_count() -> None:
+    # Guards against ranking by workload: the busiest pitcher is the least
+    # effective, so a pitch-count ranking would put him first.
+    starts_df = pd.concat(
+        [
+            _ranking_rows(1, pitches=110, csw=22),  # 20%, most pitches
+            _ranking_rows(2, pitches=80, csw=28),  # 35%
+            _ranking_rows(3, pitches=90, csw=27),  # 30%
+        ]
+    )
+    top, bottom = rank_starters(starts_df, n=1)
+    assert list(top) == [2]
+    assert list(bottom) == [1]
+
+
+def test_rank_starters_excludes_pitchers_below_the_minimum() -> None:
+    starts_df = pd.concat(
+        [
+            _ranking_rows(1, pitches=20, csw=15),  # 75%, but only 20 pitches
+            _ranking_rows(2, pitches=90, csw=27),
+        ]
+    )
+    top, bottom = rank_starters(starts_df, n=5, min_pitches=75)
+    assert list(top) == [2]
+    assert 1 not in set(top) | set(bottom)
+
+
+def test_rank_starters_least_effective_list_is_worst_first() -> None:
+    starts_df = pd.concat(
+        [_ranking_rows(i, pitches=100, csw=20 + i) for i in range(1, 7)]
+    )
+    top, bottom = rank_starters(starts_df, n=2)
+    assert list(top) == [6, 5]
+    assert list(bottom) == [1, 2]
+
+
 def test_rank_starters_bottom_list_never_repeats_top_list() -> None:
-    df = pd.DataFrame(_game_one())
-    starts_df = df.merge(identify_starts(df), on=["game_pk", "pitcher"])
+    starts_df = pd.concat(
+        [_ranking_rows(i, pitches=100, csw=20 + i) for i in range(1, 4)]
+    )
     top, bottom = rank_starters(starts_df, n=5)
-    assert list(top) == [AWAY_STARTER, HOME_STARTER]
+    assert list(top) == [3, 2, 1]
     assert set(top).isdisjoint(set(bottom))
 
 
@@ -189,7 +236,9 @@ def test_process_data_counts_only_pitches_thrown_in_starts(monkeypatch) -> None:
     df = pd.DataFrame(_game_one() + _relief_outing_by_home_starter())
     monkeypatch.setattr(data_processing, "fetch_data", lambda start, end: df)
 
-    top, bottom, summaries, stats = process_data("2026-10-24", "2026-10-25", n=5)
+    top, bottom, summaries, stats = process_data(
+        "2026-10-24", "2026-10-25", n=5, min_pitches=1
+    )
 
     home = stats[HOME_STARTER]
     assert home["games_started"] == 1

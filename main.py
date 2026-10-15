@@ -19,7 +19,7 @@ def main():
         "--n",
         type=int,
         default=5,
-        help="Number of starters in each list (most and fewest pitches thrown).",
+        help="Number of starters in each list (most and least effective, by CSW%).",
     )
 
     args = parser.parse_args()
@@ -28,10 +28,10 @@ def main():
         args.start_date, args.end_date, args.n
     )
     display_data(
-        top_pitchers, "MOST PITCHES THROWN", all_pitchers_summary, general_stats
+        top_pitchers, "MOST EFFECTIVE (CSW%)", all_pitchers_summary, general_stats
     )
     display_data(
-        bottom_pitchers, "FEWEST PITCHES THROWN", all_pitchers_summary, general_stats
+        bottom_pitchers, "LEAST EFFECTIVE (CSW%)", all_pitchers_summary, general_stats
     )
 
 

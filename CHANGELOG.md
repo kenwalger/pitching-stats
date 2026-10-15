@@ -6,6 +6,10 @@ All notable changes to this project are summarized here. Entries are grouped by 
 git log --format='%h %ad %s' --date=short
 ```
 
+## 2026-10-15 (later)
+
+- **Rank by effectiveness**: Starters are now ranked by CSW% (called strikes plus whiffs per pitch) rather than pitch count, with a 75-pitch minimum to qualify. Lists are "Most Effective" (best first) and "Least Effective" (worst first). CSW% is shown on each card and in the CLI. A notice appears when no starter reaches the minimum.
+
 ## 2026-10-15
 
 - **Starter identification**: Find both starters in every game by grouping on game and half-inning. Previously only the first pitch of each game was used, which identified the home starter and dropped every road starter.

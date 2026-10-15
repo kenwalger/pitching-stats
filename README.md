@@ -9,7 +9,7 @@ The hosted version on Render is intended as a **lightweight demo**: date ranges 
 -   **Starter Identification**: Finds both starting pitchers in every game (the first pitcher in the top of the first is the home starter, the first in the bottom of the first is the road starter). Stats include only pitches thrown in a pitcher's starts; relief appearances in the same date range are excluded.
 -   **Contextual Statistics**: Displays raw totals (GS, IP, R, K, BB, H, HR) and rate stats (R/9, WHIP, K/9, BB/9, HR/9).
     -   **R/9, not ERA.** Statcast pitch data does not record earned runs, so the app reports runs that scored while the pitcher was on the mound, per nine innings. It is not earned and does not reassign inherited runners, so it will not match official ERA.
--   **Workload Ranking**: Starters are listed by total pitches thrown (most and fewest). This measures workload, not quality. If there are fewer starters than two full lists, no pitcher appears in both.
+-   **Effectiveness Ranking**: Starters are listed as most and least effective by **CSW%** (called strikes plus whiffs, as a share of all pitches), which stays meaningful over short date ranges. Only starters with at least 75 pitches in their starts qualify, roughly one full start. If there are fewer qualifiers than two full lists, no pitcher appears in both.
 -   **Postseason Ready**: `pybaseball` requests regular season, postseason, and spring training games, so a postseason date range works with no extra settings. An entire World Series fits inside the hosted demo's 14-day window.
 -   **Performance Highlighting**: Pitch speed and spin rates are automatically color-coded (red/green) if they are significantly different from the MLB average for that pitch type, making it easy to spot exceptional performances.
 -   **Interactive Charts (Web UI)**: After you submit the form, each pitcher card includes a **Visualizations** section (Bootstrap tabs) powered by [Chart.js](https://www.chartjs.org/) via `templates/base.html` (`extra_head`) and logic in `templates/index.html`:
@@ -50,7 +50,7 @@ To start the Flask web server:
 python app.py
 ```
 
-Open your web browser and navigate to `http://127.0.0.1:5000`. You can then select a date range and the number of starters to show in each list. Charts appear under each pitcher’s summary table after results load; Location and Velocity/Spin tabs include Chart.js legends keyed by pitch type.
+Open your web browser and navigate to `http://127.0.0.1:5000`. You can then select a date range and the number of starters to show in each list (most and least effective). Charts appear under each pitcher’s summary table after results load; Location and Velocity/Spin tabs include Chart.js legends keyed by pitch type.
 
 ### Command-Line Interface
 
@@ -67,7 +67,7 @@ python main.py --start_date YYYY-MM-DD --end_date YYYY-MM-DD --n 10
 ```
 -   `--start_date`: The start date for the data query.
 -   `--end_date`: The end date for the data query.
--   `--n`: The number of starters in each list (most and fewest pitches thrown).
+-   `--n`: The number of starters in each list (most and least effective, by CSW%).
 
 ## Tests
 

@@ -43,6 +43,11 @@ SINGLE_OUT_EVENTS: List[str] = [
 #: Events that count as hits allowed.
 HIT_EVENTS: List[str] = ["single", "double", "triple", "home_run"]
 
+#: Minimum pitches thrown in starts to qualify for the effectiveness rankings,
+#: roughly one full start. Keeps a pitcher with a handful of great pitches off
+#: the top of the list.
+MIN_QUALIFYING_PITCHES: int = 75
+
 
 def fetch_data(start_str: str, end_str: str) -> pd.DataFrame:
     """Fetch pitch-level Statcast data for a date range.
@@ -175,6 +180,7 @@ def compute_general_stats(df_pitcher: pd.DataFrame) -> Dict[str, Any]:
         "hits": hits,
         "hr": hr,
         "runs": runs,
+        "csw_rate": float(df_pitcher["csw"].mean()) if "csw" in df_pitcher else None,
         "R/9": per_nine(runs),
         "WHIP": whip,
         "K/9": per_nine(strikeouts),
@@ -237,27 +243,44 @@ def summarize_pitcher(df_pitcher: pd.DataFrame) -> pd.DataFrame:
     return summary[cols]
 
 
-def rank_starters(starts_df: pd.DataFrame, n: int) -> Tuple[pd.Index, pd.Index]:
-    """Rank starters by total pitches thrown in their starts.
+def rank_starters(
+    starts_df: pd.DataFrame, n: int, min_pitches: int = MIN_QUALIFYING_PITCHES
+) -> Tuple[pd.Index, pd.Index]:
+    """Rank qualifying starters by effectiveness, measured as CSW%.
 
-    Rankings measure workload, not performance. When there are fewer than
-    ``2 * n`` starters, the bottom list excludes anyone already in the top list,
-    so no pitcher appears twice.
+    CSW% (called strikes plus whiffs, as a share of all pitches) settles quickly,
+    so it stays meaningful over short date ranges where runs allowed swing wildly.
+    Only starters with at least ``min_pitches`` pitches in their starts qualify.
+    Ties are broken by pitches thrown. When there are fewer than ``2 * n``
+    qualifiers, the bottom list excludes anyone already in the top list, so no
+    pitcher appears twice.
 
-    :param starts_df: Pitch-level data restricted to starts.
+    :param starts_df: Pitch-level data restricted to starts, with a ``csw`` column.
     :param n: Number of pitchers in each list.
-    :return: ``(top, bottom)`` pitcher ids, most pitches first.
+    :param min_pitches: Minimum pitches thrown to qualify.
+    :return: ``(most_effective, least_effective)`` pitcher ids. The first is
+        ordered best first, the second worst first.
     """
-    pitch_counts = (
-        starts_df.groupby("pitcher")["pitch_type"].count().sort_values(ascending=False)
+    per_pitcher = starts_df.groupby("pitcher").agg(
+        csw_rate=("csw", "mean"), pitches=("csw", "size")
     )
-    top = pitch_counts.head(n).index
-    bottom = pitch_counts.drop(top).tail(n).index
+    qualified = per_pitcher[per_pitcher["pitches"] >= min_pitches]
+    best_first = qualified.sort_values(
+        by=["csw_rate", "pitches"], ascending=[False, False]
+    )
+    top = best_first.head(n).index
+    worst_first = qualified.drop(top).sort_values(
+        by=["csw_rate", "pitches"], ascending=[True, False]
+    )
+    bottom = worst_first.head(n).index
     return top, bottom
 
 
 def process_data(
-    start_dt: str, end_dt: str, n: int = 5
+    start_dt: str,
+    end_dt: str,
+    n: int = 5,
+    min_pitches: int = MIN_QUALIFYING_PITCHES,
 ) -> Tuple[pd.Index, pd.Index, Dict[Any, pd.DataFrame], Dict[Any, Dict[str, Any]]]:
     """Fetch a date range and summarize its starting pitchers.
 
@@ -266,7 +289,8 @@ def process_data(
 
     :param start_dt: First date to include, in ``YYYY-MM-DD`` format.
     :param end_dt: Last date to include, in ``YYYY-MM-DD`` format.
-    :param n: Number of starters in each of the top and bottom lists.
+    :param n: Number of starters in each of the most and least effective lists.
+    :param min_pitches: Minimum pitches thrown in starts to be ranked.
     :return: ``(top_pitchers, bottom_pitchers, summaries, general_stats)``,
         where the last two are keyed by pitcher id.
     """
@@ -281,7 +305,7 @@ def process_data(
     if starts_df.empty:
         return pd.Index([]), pd.Index([]), {}, {}
 
-    top_pitchers, bottom_pitchers = rank_starters(starts_df, n)
+    top_pitchers, bottom_pitchers = rank_starters(starts_df, n, min_pitches)
 
     all_pitchers_summary: Dict[Any, pd.DataFrame] = {}
     general_stats: Dict[Any, Dict[str, Any]] = {}
@@ -302,6 +326,15 @@ def _format_rate(value: Optional[float]) -> str:
     return "n/a" if value is None else f"{value:.2f}"
 
 
+def _format_pct(value: Optional[float]) -> str:
+    """Format a proportion as a percentage, showing ``n/a`` when unavailable.
+
+    :param value: A proportion between 0 and 1, or ``None``.
+    :return: The percentage to one decimal place, or ``"n/a"``.
+    """
+    return "n/a" if value is None else f"{value * 100:.1f}%"
+
+
 def display_data(
     pitcher_ids: pd.Index,
     category: str,
@@ -311,7 +344,7 @@ def display_data(
     """Print pitcher summaries to the terminal.
 
     :param pitcher_ids: Pitchers to print, in order.
-    :param category: Heading label, such as ``"MOST PITCHES"``.
+    :param category: Heading label, such as ``"MOST EFFECTIVE"``.
     :param all_pitchers_summary: Per-pitch-type summaries keyed by pitcher id.
     :param general_stats: Totals and rate stats keyed by pitcher id.
     """
@@ -325,7 +358,8 @@ def display_data(
             f"\n{stats['player_name']} ({stats['pitcher_team']}), last start vs "
             f"{stats['opponent_team']}: {stats['games_started']} GS, "
             f"{stats['innings_pitched']} IP, {stats['total_pitches']} pitches\n"
-            f"  Rates: R/9: {_format_rate(stats['R/9'])} | WHIP: {stats['WHIP']:.2f} | "
+            f"  Rates: CSW%: {_format_pct(stats['csw_rate'])} | "
+            f"R/9: {_format_rate(stats['R/9'])} | WHIP: {stats['WHIP']:.2f} | "
             f"K/9: {stats['K/9']:.2f} | BB/9: {stats['BB/9']:.2f} | HR/9: {stats['HR/9']:.2f}\n"
             f"  Totals: {runs} R | {stats['strikeouts']} K | {stats['walks']} BB | "
             f"{stats['hits']} H | {stats['hr']} HR"
@@ -341,7 +375,8 @@ def display_data(
 Pitch types: see constants/pitch_type_mapping.py for the full Statcast list.
     Note that ST is the sweeper and SV is the slurve. Statcast has no separate
     two-seam code; two-seamers are generally classified as SI (sinker).
-CSW Rate = Called Strike + Whiff rate (share of pitches ending in a called or swinging strike)
+CSW Rate = Called Strike + Whiff rate (share of pitches ending in a called or swinging strike).
+    Used to rank starters as most and least effective, minimum 75 pitches in starts.
 Whiff Rate = Swing-and-miss only
 R/9 = Runs scored while the pitcher was pitching, per nine innings. Not ERA.
 plate_x = horizontal location over the plate (feet, center = 0)
