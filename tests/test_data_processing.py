@@ -133,6 +133,24 @@ def test_runs_allowed_without_score_columns_is_none() -> None:
     assert runs_allowed(df) is None
 
 
+def test_runs_allowed_treats_a_missing_score_as_unknown() -> None:
+    # Guards against filling missing scores with zero, which would silently
+    # undercount: the run on the missing row would simply vanish.
+    df = pd.DataFrame(_game_one())
+    away = df[df["pitcher"] == AWAY_STARTER].copy()
+    away.loc[away.index[1], "post_bat_score"] = float("nan")
+    assert runs_allowed(away) is None
+
+
+def test_missing_score_reports_unknown_r9_not_zero() -> None:
+    df = pd.DataFrame(_game_one())
+    away = df[df["pitcher"] == AWAY_STARTER].copy()
+    away.loc[away.index[0], "bat_score"] = float("nan")
+    stats = compute_general_stats(away)
+    assert stats["runs"] is None
+    assert stats["R/9"] is None
+
+
 def test_general_stats_report_runs_not_a_mislabeled_era() -> None:
     # Guards against the old "ERA", which was computed from home runs alone.
     df = pd.DataFrame(_game_one())

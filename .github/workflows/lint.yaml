@@ -20,9 +20,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install the linters plus your app's requirements
-          pip install black flake8
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Installs the app's requirements plus pytest, Black, and flake8
+          pip install -r requirements-dev.txt
 
       - name: Check formatting with Black
         # This will check if your code follows the Black style guide
@@ -32,6 +31,10 @@ jobs:
         run: |
           # Basic syntax error check
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Detailed linting (exit-zero ensures the build doesn't fail 
+          # Detailed linting (exit-zero ensures the build doesn't fail
           # just because of a missing space, but still reports it)
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Run tests
+        # Offline tests with synthetic Statcast rows; no network access needed
+        run: python -m pytest -q

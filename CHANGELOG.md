@@ -15,6 +15,7 @@ git log --format='%h %ad %s' --date=short
 - **Ranking labels**: "Top/Bottom" is now "Most/Fewest Pitches Thrown", since the ranking measures workload. The fewest list no longer repeats pitchers already in the most list.
 - **Tests**: Added offline pytest suite with synthetic Statcast rows (`tests/`), plus `requirements-dev.txt`.
 - **Formatting**: Applied Black so the existing CI check passes.
+- **Review follow-up**: A missing score is now treated as unknown rather than zero, so runs and R/9 show `n/a` instead of an undercount. CI now installs `requirements-dev.txt` and runs the test suite.
 
 ## 2026-03-22
 

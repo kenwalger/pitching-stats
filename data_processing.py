@@ -105,12 +105,20 @@ def runs_allowed(df_pitcher: pd.DataFrame) -> Optional[int]:
     This is not earned runs, and runners he left on base who score later are
     charged to whoever was pitching when they scored.
 
+    A missing score is unknown, not zero. If any of the pitcher's rows lacks a
+    before or after score, a run could have scored on that pitch without being
+    counted, so the total is reported as unknown rather than as an undercount.
+
     :param df_pitcher: Pitch-level data for one pitcher.
-    :return: Runs scored, or ``None`` if the score columns are unavailable.
+    :return: Runs scored, or ``None`` if the score columns are unavailable or
+        any row is missing a score.
     """
     if "bat_score" not in df_pitcher or "post_bat_score" not in df_pitcher:
         return None
-    delta = (df_pitcher["post_bat_score"] - df_pitcher["bat_score"]).fillna(0)
+    scores = df_pitcher[["bat_score", "post_bat_score"]]
+    if scores.isna().any().any():
+        return None
+    delta = scores["post_bat_score"] - scores["bat_score"]
     return int(delta.clip(lower=0).sum())
 
 
