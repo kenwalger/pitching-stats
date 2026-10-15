@@ -132,3 +132,5 @@ dmypy.json
 commit-message.txt
 tag-message.txt
 docs/
+*.bundle
+*.patch
