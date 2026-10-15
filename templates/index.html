@@ -7,12 +7,12 @@
 {% macro pitcher_card(pitcher, section, idx) %}
                 <div class="card mt-3 pitcher-detail-card" data-pitcher-card="{{ section }}-{{ idx }}">
                     <div class="card-header">
-                        <strong>{{ pitcher.stats.player_name }}</strong> ({{ pitcher.stats.pitcher_team }}) vs {{ pitcher.stats.opponent_team }}
+                        <strong>{{ pitcher.stats.player_name }}</strong> ({{ pitcher.stats.pitcher_team }}) <span class="text-muted">last start vs</span> {{ pitcher.stats.opponent_team }}
                     </div>
                     <div class="card-body">
                         <p class="mb-1">
                             <strong>Rates:</strong>
-                            ERA: {{ "%.2f"|format(pitcher.stats.ERA) }} |
+                            <abbr title="Runs scored while this pitcher was pitching, per nine innings. Not earned runs, so this is not ERA.">R/9</abbr>: {{ "n/a" if pitcher.stats['R/9'] is none else "%.2f"|format(pitcher.stats['R/9']) }} |
                             WHIP: {{ "%.2f"|format(pitcher.stats.WHIP) }} |
                             K/9: {{ "%.2f"|format(pitcher.stats['K/9']) }} |
                             BB/9: {{ "%.2f"|format(pitcher.stats['BB/9']) }} |
@@ -20,8 +20,10 @@
                         </p>
                         <p class="mb-2">
                             <strong>Totals:</strong>
+                            {{ pitcher.stats.games_started }} GS |
                             {{ pitcher.stats.innings_pitched }} IP |
                             {{ pitcher.stats.total_pitches }} Pitches |
+                            {{ "n/a" if pitcher.stats.runs is none else pitcher.stats.runs }} R |
                             {{ pitcher.stats.strikeouts }} K |
                             {{ pitcher.stats.walks }} BB |
                             {{ pitcher.stats.hits }} H |
@@ -93,7 +95,7 @@
             <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date }}">
         </div>
         <div class="col-auto">
-            <label for="num_pitchers" class="form-label">Top/Bottom N:</label>
+            <label for="num_pitchers" class="form-label" title="Starters are ranked by total pitches thrown in their starts, not by performance.">Starters per list:</label>
             <input type="number" id="num_pitchers" name="num_pitchers" class="form-control" min="{{ num_pitchers_input_min }}" max="{{ num_pitchers_input_max }}" step="1" value="{{ num_pitchers }}">
         </div>
         <div class="col-auto">
@@ -141,17 +143,26 @@
                         <li><strong>Average Speed:</strong> More than 2 MPH different from the MLB average.</li>
                         <li><strong>Average Spin:</strong> More than 150 RPM different from the MLB average.</li>
                     </ul>
+                    Pitch types without a league average on file are shown but not color-coded.
+                </small>
+                <hr>
+                <small class="text-muted">
+                    <ul class="mb-0">
+                        <li><strong>Starts only:</strong> stats include only pitches thrown in games the pitcher started. Relief appearances in the same date range are excluded.</li>
+                        <li><strong>Ranking:</strong> starters are ranked by total pitches thrown, a measure of workload, not quality.</li>
+                        <li><strong>R/9:</strong> runs scored while the pitcher was on the mound, per nine innings. Statcast does not record earned runs, so this is not ERA and will not match official figures.</li>
+                    </ul>
                 </small>
             </div>
 
-            <h2 class="mt-5">Top {{ num_pitchers }} Starters</h2>
+            <h2 class="mt-5">Most Pitches Thrown: {{ top_pitchers_data|length }} Starters</h2>
             {% for pitcher in top_pitchers_data %}
                 {{ pitcher_card(pitcher, 'top', loop.index0) }}
             {% endfor %}
         {% endif %}
 
         {% if bottom_pitchers_data %}
-            <h2 class="mt-5">Bottom {{ num_pitchers }} Starters</h2>
+            <h2 class="mt-5">Fewest Pitches Thrown: {{ bottom_pitchers_data|length }} Starters</h2>
             {% for pitcher in bottom_pitchers_data %}
                 {{ pitcher_card(pitcher, 'bottom', loop.index0) }}
             {% endfor %}

@@ -90,7 +90,7 @@ PITCH_DATA = {
         "avg_velocity": 75,
         "avg_bauer_units": round(600 / 75, 1),
         "avg_horizontal_break": 4.0,  # highly variable
-        "avg_vertical_break": 4.0,    # highly variable
+        "avg_vertical_break": 4.0,  # highly variable
         "avg_release_height": 5.9,
         "avg_extension": 6.0,
     },

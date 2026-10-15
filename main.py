@@ -2,6 +2,7 @@ import argparse
 from datetime import date, timedelta
 from data_processing import process_data, display_data
 
+
 def main():
     parser = argparse.ArgumentParser(description="Fetch and display pitcher data.")
     parser.add_argument(
@@ -18,14 +19,20 @@ def main():
         "--n",
         type=int,
         default=5,
-        help="Number of top/bottom pitchers to display."
+        help="Number of starters in each list (most and fewest pitches thrown).",
     )
 
     args = parser.parse_args()
 
-    top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = process_data(args.start_date, args.end_date, args.n)
-    display_data(top_pitchers, "TOP", all_pitchers_summary, general_stats)
-    display_data(bottom_pitchers, "BOTTOM", all_pitchers_summary, general_stats)
+    top_pitchers, bottom_pitchers, all_pitchers_summary, general_stats = process_data(
+        args.start_date, args.end_date, args.n
+    )
+    display_data(
+        top_pitchers, "MOST PITCHES THROWN", all_pitchers_summary, general_stats
+    )
+    display_data(
+        bottom_pitchers, "FEWEST PITCHES THROWN", all_pitchers_summary, general_stats
+    )
 
 
 if __name__ == "__main__":

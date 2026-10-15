@@ -6,6 +6,16 @@ All notable changes to this project are summarized here. Entries are grouped by 
 git log --format='%h %ad %s' --date=short
 ```
 
+## 2026-10-15
+
+- **Starter identification**: Find both starters in every game by grouping on game and half-inning. Previously only the first pitch of each game was used, which identified the home starter and dropped every road starter.
+- **Starts only**: Stats now include only pitches thrown in a pitcher's starts. Relief appearances by a starter in the same range are excluded. Cards show games started (GS).
+- **ERA replaced with R/9**: The old "ERA" was computed from home runs alone, duplicating HR/9. Statcast does not record earned runs, so the app now reports runs scored while the pitcher was pitching (from `bat_score` / `post_bat_score`) as R and R/9, labeled and explained in the UI.
+- **Pitch types**: `ST` now maps to sweeper (it was two-seam fastball, so sweepers were compared against fastball averages and nearly always flagged slow). Added `SV` slurve, `KC`, `CS`, `FA`, `FO`, `SC`, `PO`; removed the non-Statcast `GY`. Reference page and decoder updated.
+- **Ranking labels**: "Top/Bottom" is now "Most/Fewest Pitches Thrown", since the ranking measures workload. The fewest list no longer repeats pitchers already in the most list.
+- **Tests**: Added offline pytest suite with synthetic Statcast rows (`tests/`), plus `requirements-dev.txt`.
+- **Formatting**: Applied Black so the existing CI check passes.
+
 ## 2026-03-22
 
 - **Hosted demo (Render)**: Detect `RENDER=true` (set automatically on Render web services). Cap each request to **14 calendar days** inclusive before calling `process_data`; show validation errors on the home form when the span is too long. Add a site-wide demo banner under the nav and a short note under the date form on the index page. README explains demo vs. local runs and how to set `RENDER=true` locally to test the same behavior.
